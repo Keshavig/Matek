@@ -1,8 +1,8 @@
 #include <stdexcept>
 
-#include "operators.hpp"
-#include "tokenType.hpp"
-#include "lexer.hpp"
+#include "operators.h"
+#include "tokenType.h"
+#include "lexer.h"
 
 BasicOperators operatorsList = {
     { '+', [](double a, double b) { return a+b; } },

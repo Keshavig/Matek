@@ -3,7 +3,7 @@
 #include <vector>
 #include <initializer_list>
 
-#include "tokenType.hpp"
+#include "tokenType.h"
 
 typedef double (*functionPtr) (const double val1, const double val2);
 

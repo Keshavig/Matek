@@ -2,7 +2,7 @@
 
 #include <string>
 
-#include "tokenType.hpp"
+#include "tokenType.h"
 
 struct Token {
     std::string tokenSymbol;
