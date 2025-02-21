@@ -1,21 +1,25 @@
 #include <cassert>
 #include <cctype>
 #include <cstdio>
+#include <cstdlib>
 #include <memory>
 #include <string>
 #include <utility>
 #include <iostream>
 
 #include "lexer.h"
+#include "operators.h"
 #include "tokenType.h"
+
+extern BasicOperators operatorsList;
 
 #define COLOR_RED "\033[38;2;255;108;107m" // Color #ff6c6b
 #define RESET_TERM_COLOR "\033[0m"
 
 /* TODO: Add 2*3*4*5 type support should be like (((2*3)*4)*5) [DONE]
- * TODO: Add parenthesis support
- * TODO: Extend for many things like variable search/matching function matching etc.
+ * TODO: Add parenthesis support [DONE]
  * TODO: Add Evaluate function
+ * TODO: Extend for many things like variable search/matching function matching etc.
  * TODO: Make ast.hpp header file; rather make parser.hpp header file
  * TODO: Allow User to even fucking have their own error messages
  * */
@@ -200,11 +204,27 @@ public:
     }
 };
 
-void printast(const std::unique_ptr<BaseAst>& ptr) {
+void printast(const std::unique_ptr<BaseAst> ptr) {
     if (ptr) {
         ptr->print();  // Delegate the print operation to the appropriate node type's print function
         std::cout << std::endl;
     }
+}
+
+double eval(const std::unique_ptr<BaseAst>& ast) {
+    if (auto numberNode = dynamic_cast<NumberNode*>(ast.get())) {
+        return numberNode->value;
+    }
+
+    else if (auto binaryNode = dynamic_cast<BinaryNode*>(ast.get())) {
+        double left = eval(binaryNode->leftNode);
+        double right = eval(binaryNode->rightNode);
+
+        return operatorsList.runfun(binaryNode->_operator, left, right);
+    }
+
+    fprintf(stderr, "%serror: invalid ast%s\n", COLOR_RED, RESET_TERM_COLOR);
+    abort();
 }
 
 int main(void) {
@@ -218,5 +238,6 @@ int main(void) {
 
     std::unique_ptr<BaseAst> parsed_output = parse.startParsing();
     printast(std::move(parsed_output));
+    std::cout << eval(parsed_output) << std::endl;
 }
 

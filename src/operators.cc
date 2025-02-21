@@ -69,3 +69,16 @@ void BasicOperators::remove(const char character) {
     }
 }
 
+double BasicOperators::runfun(const char _operator, double arg1, double arg2) {
+    size_t len = m_OperatorList.size();
+
+    for (size_t i = 0; i < len; i++) {
+        if (_operator == m_OperatorList[i].operatorSymbol) {
+            return m_OperatorList[i].operatorFunction(arg1, arg2);
+        }
+    }
+
+    // TODO: We know we are going to create a error file, use that to throw an error here
+    // like invalid operator $RED_COLOR _operator
+    return -69.96;
+}

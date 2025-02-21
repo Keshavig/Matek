@@ -41,6 +41,8 @@ class BasicOperators {
         singleOperator get(const size_t position) const;
         size_t size(void) const;
 
+        double runfun(const char _operator, double arg1, double arg2);
+
     private:
         operatorList m_OperatorList;
 };
