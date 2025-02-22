@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <memory>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <iostream>
@@ -111,9 +112,16 @@ public:
         /* this is for expression's like: -2, +3.14
          * we will just evaluate such input as: 0 - 2 */
 
-        if (CurrentToken.tokenType == TokenType::OPERATOR && CurrentTokenPosition == 1) {
-            std::unique_ptr<BaseAst> number = std::make_unique<NumberNode>(0.0);
-            return number;
+        /* TODO: (CHECK) for ++2 or --2 and stuff like that */
+        if (CurrentToken.tokenType == TokenType::OPERATOR &&
+            (CurrentOperator == '+' || CurrentOperator == '-') && CurrentTokenPosition != m_expression.size())
+        {
+
+            std::unique_ptr<BaseAst> lNumber = std::make_unique<NumberNode>(0);
+            char Operator = CurrentOperator;
+            std::unique_ptr<BaseAst> rNumber = parse_np();
+
+            return std::make_unique<BinaryNode>(Operator, std::move(lNumber), std::move(rNumber));
         }
 
         else if (CurrentToken.tokenType == TokenType::LPAREN) {
@@ -121,15 +129,27 @@ public:
             return returnNode;
         }
 
+        else if (CurrentToken.tokenType == TokenType::OPERATOR) {
+            fprintf(stderr, "%sfatal error: invalid syntax at %zu: '%s'%s\n", COLOR_RED,
+                    CurrentTokenPosition, CurrentToken.tokenSymbol.c_str(), RESET_TERM_COLOR);
+            exit(1);
+        }
+
         else if (CurrentToken.tokenType == TokenType::END) {
-            fprintf(stderr, "%sinvalid call to parse_np; program failed; end of expression was reached%s\n",
+            fprintf(stderr, "%sfatal error: end of expression was reached%s\n",
                     COLOR_RED, RESET_TERM_COLOR);
             exit(1);
         }
 
         else if (CurrentToken.tokenType == TokenType::RPAREN) {
-            fprintf(stderr, "%sfatal error: invalid syntax at %zu '%s'%s\n", COLOR_RED, CurrentTokenPosition,
-                    CurrentToken.tokenSymbol.c_str(), RESET_TERM_COLOR);
+            fprintf(stderr, "| %sError: invalid syntax\n%s", COLOR_RED, RESET_TERM_COLOR);
+            fprintf(stderr, "| %serror was found with symbol '%s' at position %zu%s\n", COLOR_RED,
+                    CurrentToken.tokenSymbol.c_str(),
+                    CurrentTokenPosition,
+                    RESET_TERM_COLOR);;
+
+            exit(1);
+
         }
 
         else if (CurrentToken.tokenType != TokenType::NUMBER) {
@@ -139,33 +159,46 @@ public:
             exit(1);
         }
 
+
         std::string number;
         number = CurrentToken.tokenSymbol;
-        std::cout << "Number: " << number << std::endl;
-        std::unique_ptr<BaseAst> numberNode = std::make_unique<NumberNode>(std::stod(number));
+        std::unique_ptr<BaseAst> numberNode;
+
+        try {
+         numberNode = std::make_unique<NumberNode>(std::stod(number));
+        }
+
+        catch (const std::invalid_argument& e) {
+            std::cerr << "error: invalid syntax" << std::endl;
+            exit(1);
+        }
+
+        catch (const std::out_of_range& err) {
+            std::cerr << "error: " << number << " is way too big\n";
+            exit(1);
+        }
 
         return numberNode;
     }
 
     std::unique_ptr<BaseAst> gethpNodes(std::unique_ptr<BaseAst> node) {
+        // Problem := (1+2) * (2-1) / (2+3)
 
         /* If node = nullptr then parse_numbers else just copy the node into left node */
         std::unique_ptr<BaseAst> ln = !node ? parse_np() : std::move(node);
         getNewCurrentToken();
-        char _operator = CurrentOperator;
+        char Operator = CurrentOperator;
 
-        if (_operator == '+' || _operator == '-' || CurrentToken.tokenType == TokenType::END || CurrentToken.tokenType == TokenType::RPAREN)
+        if (Operator == '+' || Operator == '-' ||
+            CurrentToken.tokenType == TokenType::END ||
+            CurrentToken.tokenType == TokenType::RPAREN)
         {
             return ln;
         }
 
         std::unique_ptr<BaseAst> rn = parse_np();
-        std::unique_ptr<BaseAst> hpnode = std::make_unique<BinaryNode>(_operator,
-                                                                       std::move(ln),
-                                                                       std::move(rn));
+        return std::make_unique<BinaryNode>(Operator, std::move(ln), std::move(rn));
 
-        // getNewCurrentToken();
-        return hpnode;
     }
 
     std::unique_ptr<BaseAst> parse_hp() {
@@ -174,14 +207,20 @@ public:
         /* This whole loop is for things like 2*3*4*... = ((2*3)*4)... */
         do {
             hpnode = gethpNodes(std::move(hpnode));
-        } while (CurrentOperator != '+' && CurrentOperator != '-' && CurrentToken.tokenType != TokenType::END && CurrentToken.tokenType != TokenType::RPAREN && CurrentToken.tokenType != TokenType::END);
+        } while (
+        CurrentOperator != '+' &&
+        CurrentOperator != '-' &&
+        CurrentToken.tokenType != TokenType::END &&
+        CurrentToken.tokenType != TokenType::RPAREN &&
+        CurrentToken.tokenType != TokenType::END );
 
         return hpnode;
     }
 
     std::unique_ptr<BaseAst> getsubNodes(std::unique_ptr<BaseAst> node) {
-        std::unique_ptr<BaseAst> leftnode = !node ? parse_hp() : std::move(node);
+        std::unique_ptr<BaseAst> leftnode = !node ? parse_hp() : std::move(node); 
 
+        
         /* For cases like: 2 or 3 when there is just one operand and nothing, we just return that operand*/
         if (CurrentToken.tokenType == TokenType::END || CurrentToken.tokenType == TokenType::RPAREN) 
             return leftnode;
@@ -198,13 +237,14 @@ public:
 
         do {
             mainNode = getsubNodes(std::move(mainNode));
+            getNewCurrentToken();
         } while (CurrentToken.tokenType != TokenType::END && CurrentToken.tokenType != TokenType::RPAREN);
 
         return mainNode;
     }
 };
 
-void printast(const std::unique_ptr<BaseAst> ptr) {
+void printast(const std::unique_ptr<BaseAst>& ptr) {
     if (ptr) {
         ptr->print();  // Delegate the print operation to the appropriate node type's print function
         std::cout << std::endl;
@@ -217,14 +257,14 @@ double eval(const std::unique_ptr<BaseAst>& ast) {
     }
 
     else if (auto binaryNode = dynamic_cast<BinaryNode*>(ast.get())) {
-        double left = eval(binaryNode->leftNode);
-        double right = eval(binaryNode->rightNode);
+        double left = eval(std::move(binaryNode->leftNode));
+        double right = eval(std::move(binaryNode->rightNode));
 
         return operatorsList.runfun(binaryNode->_operator, left, right);
     }
 
     fprintf(stderr, "%serror: invalid ast%s\n", COLOR_RED, RESET_TERM_COLOR);
-    abort();
+    exit(1);
 }
 
 int main(void) {
@@ -234,10 +274,9 @@ int main(void) {
     std::getline(std::cin, expr);
 
     Parse parse(expr);
-    std::cout << "Expression: " << expr << std::endl;
 
     std::unique_ptr<BaseAst> parsed_output = parse.startParsing();
-    printast(std::move(parsed_output));
+    printast(parsed_output);
     std::cout << eval(parsed_output) << std::endl;
 }
 
