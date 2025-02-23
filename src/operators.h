@@ -1,14 +1,15 @@
 #pragma once
 
 #include <vector>
+#include <optional>
 #include <initializer_list>
 
 #include "tokenType.h"
 
-typedef double (*functionPtr) (const double val1, const double val2);
+using real_t = long double;
 
-/* Make operatorSymbol, operatorFunction and tokenType all static const and makae it 
- * work with removeAt and remove methods */
+typedef real_t (*functionPtr) (const real_t val1, const real_t val2);
+
 struct singleOperator {
     char  operatorSymbol;
     functionPtr operatorFunction;
@@ -21,7 +22,7 @@ struct singleOperator {
 
 };
 
-typedef std::vector<singleOperator> operatorList;
+using operatorList = std::vector<singleOperator>;
 
 class BasicOperators {
     public:
@@ -29,8 +30,8 @@ class BasicOperators {
         BasicOperators(std::initializer_list<singleOperator> initList) : m_OperatorList(initList) {}
 
         /* Append functions */
-        void adlist(const operatorList& OperatorList);
-        void adone(const singleOperator& singleOperator);
+        void addlist(const operatorList& OperatorList);
+        void addone(const singleOperator& singleOperator);
 
         /* Removing functions */
         void overwrite(const operatorList& newOperatorList);
@@ -41,7 +42,7 @@ class BasicOperators {
         singleOperator get(const size_t position) const;
         size_t size(void) const;
 
-        double runfun(const char _operator, double arg1, double arg2);
+    std::optional<real_t> runfun(const char _operator, real_t arg1, real_t arg2);
 
     private:
         operatorList m_OperatorList;

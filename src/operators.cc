@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <iostream>
+#include <optional>
 
 #define LOG(X) std::cout << X << std::endl;
 
@@ -9,7 +10,7 @@
 
 BasicOperators::BasicOperators(const operatorList& basicOperators): m_OperatorList(basicOperators) {}
 
-void BasicOperators::adlist(const operatorList& operatorList) {
+void BasicOperators::addlist(const operatorList& operatorList) {
     size_t opplistLen = operatorList.size();
 
     for (size_t idx = 0; idx < opplistLen; idx++) {
@@ -17,7 +18,7 @@ void BasicOperators::adlist(const operatorList& operatorList) {
     }
 }
 
-void BasicOperators::adone(const singleOperator& singleOperator) {
+void BasicOperators::addone(const singleOperator& singleOperator) {
     m_OperatorList.push_back(singleOperator);
 }
 
@@ -69,16 +70,14 @@ void BasicOperators::remove(const char character) {
     }
 }
 
-double BasicOperators::runfun(const char _operator, double arg1, double arg2) {
+std::optional<real_t> BasicOperators::runfun(const char _operator, real_t arg1, real_t arg2) {
     size_t len = m_OperatorList.size();
 
     for (size_t i = 0; i < len; i++) {
         if (_operator == m_OperatorList[i].operatorSymbol) {
-            return m_OperatorList[i].operatorFunction(arg1, arg2);
+            return std::make_optional(m_OperatorList[i].operatorFunction(arg1, arg2));
         }
     }
 
-    // TODO: We know we are going to create a error file, use that to throw an error here
-    // like invalid operator $RED_COLOR _operator
-    return -69.96;
+    return std::nullopt;
 }

@@ -5,10 +5,10 @@
 #include "lexer.h"
 
 BasicOperators operatorsList = {
-    { '+', [](double a, double b) -> double { return a+b; } },
-    { '-', [](double a, double b) -> double { return a-b; } },
-    { '*', [](double a, double b) -> double { return a*b; } },
-    { '/', [](double a, double b) -> double { b == 0 ? throw std::runtime_error("division by zero") : void(); return a/b; } },
+    { '+', [](real_t a, real_t b) -> real_t { return a+b; } },
+    { '-', [](real_t a, real_t b) -> real_t { return a-b; } },
+    { '*', [](real_t a, real_t b) -> real_t { return a*b; } },
+    { '/', [](real_t a, real_t b) -> real_t { b == 0 ? throw std::runtime_error("division by zero") : void(); return a/b; } },
 };
 
 bool Lexer::isaspace(const char ch) {

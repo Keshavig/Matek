@@ -1,18 +1,15 @@
 #include <cassert>
-#include <cctype>
 #include <cstdio>
-#include <cstdlib>
 #include <memory>
 #include <stdexcept>
 #include <string>
-#include <utility>
 #include <iostream>
 
 #include "lexer.h"
 #include "operators.h"
 #include "tokenType.h"
 
-extern BasicOperators operatorsList;
+extern BasicOperators operatorsList; // declared/defined in @lexer.h
 
 #define COLOR_RED "\033[38;2;255;108;107m" // Color #ff6c6b
 #define RESET_TERM_COLOR "\033[0m"
@@ -35,32 +32,32 @@ public:
 class BinaryNode : public BaseAst {
 public:
     BinaryNode(char _o, std::unique_ptr<BaseAst> ln, std::unique_ptr<BaseAst> rn) :
-        _operator(_o),
+        Operator(_o),
         leftNode(std::move(ln)),
         rightNode(std::move(rn)) {}
 
-    char _operator;
-    std::unique_ptr<BaseAst> leftNode;
-    std::unique_ptr<BaseAst> rightNode;
+    const char Operator;
+    const std::unique_ptr<BaseAst> leftNode;
+    const std::unique_ptr<BaseAst> rightNode;
 
     void print() const override {
-        std::cout << "(";
+        fprintf(stdout, "(");
         leftNode->print();
 
-        std::cout << ' ' << _operator << ' ';
+        fprintf(stdout, " %c ", Operator);
         rightNode->print();
 
-        std::cout << ")";
+        fprintf(stdout, ")");
     }
 };
 
 class NumberNode : public BaseAst {
 public:
-    double value;
-    NumberNode(const double _value) : value(_value) {}
+    real_t value;
+    NumberNode(const real_t _value) : value(_value) {}
 
     void print() const override {
-        std::cout << value;
+        fprintf(stdout, "%.36Lf", value);
     }
 };
 
@@ -165,16 +162,16 @@ public:
         std::unique_ptr<BaseAst> numberNode;
 
         try {
-         numberNode = std::make_unique<NumberNode>(std::stod(number));
+            numberNode = std::make_unique<NumberNode>(std::stold(number));
         }
 
         catch (const std::invalid_argument& e) {
-            std::cerr << "error: invalid syntax" << std::endl;
+            fprintf(stdout, "%serror: invalid syntax (found: numbers containing characters)%s\n", COLOR_RED, RESET_TERM_COLOR);
             exit(1);
         }
 
         catch (const std::out_of_range& err) {
-            std::cerr << "error: " << number << " is way too big\n";
+            fprintf(stdout, "%serror: %s number is way too big%s\n", COLOR_RED, number.c_str(), RESET_TERM_COLOR);
             exit(1);
         }
 
@@ -220,15 +217,15 @@ public:
     std::unique_ptr<BaseAst> getsubNodes(std::unique_ptr<BaseAst> node) {
         std::unique_ptr<BaseAst> leftnode = !node ? parse_hp() : std::move(node); 
 
-        
+
         /* For cases like: 2 or 3 when there is just one operand and nothing, we just return that operand*/
         if (CurrentToken.tokenType == TokenType::END || CurrentToken.tokenType == TokenType::RPAREN) 
             return leftnode;
 
-        char _operator = CurrentOperator;
+        char Operator = CurrentOperator;
         std::unique_ptr<BaseAst> rightnode = parse_hp();
 
-        std::unique_ptr<BaseAst> subnode = std::make_unique<BinaryNode>(_operator, std::move(leftnode), std::move(rightnode));
+        std::unique_ptr<BaseAst> subnode = std::make_unique<BinaryNode>(Operator, std::move(leftnode), std::move(rightnode));
         return subnode;
     }
 
@@ -237,30 +234,38 @@ public:
 
         do {
             mainNode = getsubNodes(std::move(mainNode));
-            getNewCurrentToken();
         } while (CurrentToken.tokenType != TokenType::END && CurrentToken.tokenType != TokenType::RPAREN);
 
+        getNewCurrentToken(); /* This is for when currentToken = ')' in case like 2*(1+2) - 5*(1-0) */
         return mainNode;
     }
 };
 
 void printast(const std::unique_ptr<BaseAst>& ptr) {
-    if (ptr) {
-        ptr->print();  // Delegate the print operation to the appropriate node type's print function
-        std::cout << std::endl;
-    }
+    if (!ptr)
+        return;
+
+    ptr->print();
+    fprintf(stdout , "\n");
 }
 
-double eval(const std::unique_ptr<BaseAst>& ast) {
+real_t eval(const std::unique_ptr<BaseAst>& ast) {
     if (auto numberNode = dynamic_cast<NumberNode*>(ast.get())) {
         return numberNode->value;
     }
 
     else if (auto binaryNode = dynamic_cast<BinaryNode*>(ast.get())) {
-        double left = eval(std::move(binaryNode->leftNode));
-        double right = eval(std::move(binaryNode->rightNode));
+        real_t left = eval(std::move(binaryNode->leftNode));
+        real_t right = eval(std::move(binaryNode->rightNode));
 
-        return operatorsList.runfun(binaryNode->_operator, left, right);
+        std::optional<real_t> retval = operatorsList.runfun(binaryNode->Operator, left, right);
+
+        if (!retval) {
+            fprintf(stderr, "%serror: invalid operator '%c' %s\n", COLOR_RED, binaryNode->Operator, RESET_TERM_COLOR);
+            exit(1);
+        }
+        return retval.value();
+
     }
 
     fprintf(stderr, "%serror: invalid ast%s\n", COLOR_RED, RESET_TERM_COLOR);
@@ -270,13 +275,15 @@ double eval(const std::unique_ptr<BaseAst>& ast) {
 int main(void) {
     std::string expr;
 
-    std::cout << "Enter a expression: ";
+    fprintf(stdout, "=> ");
     std::getline(std::cin, expr);
 
     Parse parse(expr);
 
     std::unique_ptr<BaseAst> parsed_output = parse.startParsing();
     printast(parsed_output);
-    std::cout << eval(parsed_output) << std::endl;
+
+    fprintf(stdout, "%.16Lf\n", eval(parsed_output));
+    return 0;
 }
 
