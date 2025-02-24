@@ -1,16 +1,9 @@
 #pragma once
 
 #include <string>
-#include "tokenType.h"
 
-struct Token {
-    std::string tokenSymbol;
-    TokenType tokenType;
-
-    Token() = default;
-    Token(const Token& tkn) = default;
-    Token(const std::string& ts, const TokenType tt) : tokenSymbol(ts), tokenType(tt) {}
-};
+#include "token.h"
+#include "operators.h"
 
 class Lexer {
     private:

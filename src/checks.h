@@ -8,8 +8,8 @@ class checks {
 private:
     const std::string m_expression;
 public:
-    bool checkParen(void) const; // check for things like (( 2 or (2-1))
-    bool checkOperators(void) const; // check for things like 2 ++ 2
+    bool checkParen(void) const; // check for things like (( 2 or (2-1)) check pos(first P) + check(second P) < pos()..
+    bool checkOperators(void) const; // check for things like check if #(operators) = #(numbers) - 1 ifnot error
  
     checks(const std::string& expression) : m_expression() {};
     checks(const checks& chks) = delete;

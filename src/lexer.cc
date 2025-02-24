@@ -1,7 +1,4 @@
 #include <cstdio>
-
-#include "operators.h"
-#include "tokenType.h"
 #include "lexer.h"
 
 real_t divide(real_t a, real_t b) {
