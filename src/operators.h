@@ -42,7 +42,7 @@ class BasicOperators {
         singleOperator get(const size_t position) const;
         size_t size(void) const;
 
-    std::optional<real_t> runfun(const char _operator, real_t arg1, real_t arg2);
+    std::optional<real_t> runfunc(const char _operator, real_t arg1, real_t arg2);
 
     private:
         operatorList m_OperatorList;

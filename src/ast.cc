@@ -1,4 +1,3 @@
-#include <cassert>
 #include <cstdio>
 #include <memory>
 #include <stdexcept>
@@ -57,7 +56,7 @@ public:
     NumberNode(const real_t _value) : value(_value) {}
 
     void print() const override {
-        fprintf(stdout, "%.36Lf", value);
+        fprintf(stdout, "%.5Lf", value);
     }
 };
 
@@ -138,20 +137,12 @@ public:
             exit(1);
         }
 
-        else if (CurrentToken.tokenType == TokenType::RPAREN) {
-            fprintf(stderr, "| %sError: invalid syntax\n%s", COLOR_RED, RESET_TERM_COLOR);
-            fprintf(stderr, "| %serror was found with symbol '%s' at position %zu%s\n", COLOR_RED,
+        else if (CurrentToken.tokenType != TokenType::NUMBER) {
+            fprintf(stderr, "%sError: invalid syntax\n%s", COLOR_RED, RESET_TERM_COLOR);
+            fprintf(stderr, "%serror was found with symbol '%s' at position %zu%s\n", COLOR_RED,
                     CurrentToken.tokenSymbol.c_str(),
                     CurrentTokenPosition,
                     RESET_TERM_COLOR);;
-
-            exit(1);
-
-        }
-
-        else if (CurrentToken.tokenType != TokenType::NUMBER) {
-            fprintf(stderr, "%sError invalid syntax %zu: '%s' %s\n", COLOR_RED, CurrentTokenPosition,
-                    CurrentToken.tokenSymbol.c_str(), RESET_TERM_COLOR);
 
             exit(1);
         }
@@ -175,6 +166,7 @@ public:
             exit(1);
         }
 
+        getNewCurrentToken();
         return numberNode;
     }
 
@@ -183,7 +175,6 @@ public:
 
         /* If node = nullptr then parse_numbers else just copy the node into left node */
         std::unique_ptr<BaseAst> ln = !node ? parse_np() : std::move(node);
-        getNewCurrentToken();
         char Operator = CurrentOperator;
 
         if (Operator == '+' || Operator == '-' ||
@@ -194,10 +185,11 @@ public:
         }
 
         std::unique_ptr<BaseAst> rn = parse_np();
+        //getNewCurrentToken();
         return std::make_unique<BinaryNode>(Operator, std::move(ln), std::move(rn));
 
     }
-
+    // @problem: (1+2) - (1*2) / 1 + (2-1) + 1
     std::unique_ptr<BaseAst> parse_hp() {
         std::unique_ptr<BaseAst> hpnode = nullptr;
 
@@ -205,11 +197,10 @@ public:
         do {
             hpnode = gethpNodes(std::move(hpnode));
         } while (
-        CurrentOperator != '+' &&
-        CurrentOperator != '-' &&
-        CurrentToken.tokenType != TokenType::END &&
-        CurrentToken.tokenType != TokenType::RPAREN &&
-        CurrentToken.tokenType != TokenType::END );
+        CurrentOperator != '+'
+        && CurrentOperator != '-'
+        && CurrentToken.tokenType != TokenType::END
+        && CurrentToken.tokenType != TokenType::RPAREN );
 
         return hpnode;
     }
@@ -258,14 +249,13 @@ real_t eval(const std::unique_ptr<BaseAst>& ast) {
         real_t left = eval(std::move(binaryNode->leftNode));
         real_t right = eval(std::move(binaryNode->rightNode));
 
-        std::optional<real_t> retval = operatorsList.runfun(binaryNode->Operator, left, right);
+        std::optional<real_t> retval = operatorsList.runfunc(binaryNode->Operator, left, right);
 
-        if (!retval) {
-            fprintf(stderr, "%serror: invalid operator '%c' %s\n", COLOR_RED, binaryNode->Operator, RESET_TERM_COLOR);
-            exit(1);
-        }
-        return retval.value();
+        if (retval)
+            return retval.value();
 
+        fprintf(stderr, "%serror: invalid operator '%c' %s\n", COLOR_RED, binaryNode->Operator, RESET_TERM_COLOR);
+        exit(1);
     }
 
     fprintf(stderr, "%serror: invalid ast%s\n", COLOR_RED, RESET_TERM_COLOR);

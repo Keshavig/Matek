@@ -70,7 +70,7 @@ void BasicOperators::remove(const char character) {
     }
 }
 
-std::optional<real_t> BasicOperators::runfun(const char _operator, real_t arg1, real_t arg2) {
+std::optional<real_t> BasicOperators::runfunc(const char _operator, real_t arg1, real_t arg2) {
     size_t len = m_OperatorList.size();
 
     for (size_t i = 0; i < len; i++) {
