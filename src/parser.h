@@ -40,5 +40,6 @@ private:
     std::unique_ptr<BaseAst> parse_highPrecedence();
     std::unique_ptr<BaseAst> get_highPrecedenceNodes(std::unique_ptr<BaseAst> node);
 
-    std::unique_ptr<BaseAst> parse_NumberAndParen();
+    std::unique_ptr<BaseAst> parse_Number();
+    std::unique_ptr<BaseAst> parse_Paren();
 };
