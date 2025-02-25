@@ -3,7 +3,6 @@
 
 #include "parser.h"
 #include "token.h"
-#include "operators.h"
 
 Parser::Parser(const std::string& expression) : m_expression(expression), lexer(expression) {}
 
@@ -17,87 +16,94 @@ void Parser::getNewCurrentToken(void) {
     m_currentTokenPosition = lexer.getindex();
 }
 
-std::unique_ptr<BaseAst> Parser::parse_NumberAndParen(void) {
-        getNewCurrentToken();
+std::unique_ptr<BaseAst> Parser::parse_Paren() {
+    std::unique_ptr<BaseAst> node = parse_lowPrecedence();
+    return node;
+}
 
-        /* this is for expression's like: -2, +3.14
+std::unique_ptr<BaseAst> Parser::parse_Number(void) {
+    getNewCurrentToken();
+
+    /* this is for expression's like: -2, +3.14
          * we will just evaluate such input as: 0 - 2 */
 
-        /* TODO: (CHECK) for ++2 or --2 and stuff like that
-         * TODO: try to make this function more concise(spelling?) */
-        if (m_currentTokenType == TokenType::OPERATOR &&
-            (m_currentOperator == '+' || m_currentOperator == '-') && m_currentTokenPosition != m_expression.size())
-        {
+    if (m_currentTokenType == TokenType::OPERATOR &&
+        (m_currentOperator == '+' || m_currentOperator == '-') && m_currentTokenPosition != m_expression.size())
+    {
 
-            std::unique_ptr<BaseAst> lNumber = std::make_unique<NumberNode>(0);
-            char Operator = m_currentOperator;
-            std::unique_ptr<BaseAst> rNumber = parse_NumberAndParen();
+        std::unique_ptr<BaseAst> lNumber = std::make_unique<NumberNode>(0);
+        char Operator = m_currentOperator;
+        std::unique_ptr<BaseAst> rNumber = parse_Number();
 
-            return std::make_unique<BinaryNode>(Operator, std::move(lNumber), std::move(rNumber));
-        }
-
-        else if (m_currentTokenType == TokenType::LPAREN) {
-            std::unique_ptr<BaseAst> returnNode = parse_lowPrecedence();
-            return returnNode;
-        }
-
-        else if (m_currentTokenType == TokenType::OPERATOR) {
-            fprintf(stderr, "%sfatal error: invalid syntax at %zu: '%s'%s\n", COLOR_RED,
-                    m_currentTokenPosition, m_currentTokenSymbol.c_str(), RESET_TERM_COLOR);
-            exit(1);
-        }
-
-        else if (m_currentTokenType == TokenType::END) {
-            fprintf(stderr, "%sfatal error: end of expression was reached%s\n",
-                    COLOR_RED, RESET_TERM_COLOR);
-            exit(1);
-        }
-
-        else if (m_currentTokenType != TokenType::NUMBER) {
-            fprintf(stderr, "%sError: invalid syntax\n%s", COLOR_RED, RESET_TERM_COLOR);
-            fprintf(stderr, "%serror was found with symbol '%s' at position %zu%s\n", COLOR_RED,
-                    m_currentTokenSymbol.c_str(),
-                    m_currentTokenPosition,
-                    RESET_TERM_COLOR);;
-
-            exit(1);
-        }
-
-        std::string number;
-        number = m_currentTokenSymbol;
-        std::unique_ptr<BaseAst> numberNode;
-
-        try {
-            numberNode = std::make_unique<NumberNode>(std::stold(number));
-        }
-
-        catch (const std::invalid_argument& e) {
-            fprintf(stdout, "%serror: invalid syntax (found: numbers containing characters)%s\n", COLOR_RED, RESET_TERM_COLOR);
-            exit(1);
-        }
-
-        catch (const std::out_of_range& err) {
-            fprintf(stdout, "%serror: %s number is way too big%s\n", COLOR_RED, number.c_str(), RESET_TERM_COLOR);
-            exit(1);
-        }
-
-        getNewCurrentToken();
-        return numberNode;
+        return std::make_unique<BinaryNode>(Operator, std::move(lNumber), std::move(rNumber));
     }
+
+    else if (m_currentTokenType == TokenType::LPAREN) {
+        return parse_Paren();
+    }
+
+    else if (m_currentTokenType == TokenType::OPERATOR) {
+        fprintf(stderr, "%sfatal error: invalid syntax at %zu: '%s'%s\n", COLOR_RED,
+                m_currentTokenPosition, m_currentTokenSymbol.c_str(), RESET_TERM_COLOR);
+        exit(1);
+    }
+
+    else if (m_currentTokenType == TokenType::END) {
+        fprintf(stderr, "%sfatal error: end of expression was reached%s\n",
+                COLOR_RED, RESET_TERM_COLOR);
+        exit(1);
+    }
+
+    else if (m_currentTokenType != TokenType::NUMBER) {
+        fprintf(stderr, "%sError: invalid syntax\n%s", COLOR_RED, RESET_TERM_COLOR);
+        fprintf(stderr, "%serror was found with symbol '%s' at position %zu%s\n", COLOR_RED,
+                m_currentTokenSymbol.c_str(),
+                m_currentTokenPosition,
+                RESET_TERM_COLOR);;
+
+        exit(1);
+    }
+
+    std::string number;
+    number = m_currentTokenSymbol;
+    std::unique_ptr<BaseAst> numberNode;
+
+    try {
+        numberNode = std::make_unique<NumberNode>(std::stold(number));
+    }
+
+    catch (const std::invalid_argument& e) {
+        fprintf(stdout, "%serror: invalid syntax (found: numbers containing characters)%s\n", COLOR_RED, RESET_TERM_COLOR);
+        exit(1);
+    }
+
+    catch (const std::out_of_range& err) {
+        fprintf(stdout, "%serror: %s number is way too big%s\n", COLOR_RED, number.c_str(), RESET_TERM_COLOR);
+        exit(1);
+    }
+
+    getNewCurrentToken();
+    return numberNode;
+}
 
 
 std::unique_ptr<BaseAst> Parser::get_highPrecedenceNodes(std::unique_ptr<BaseAst> node) {
-    std::unique_ptr<BaseAst> ln = !node ? parse_NumberAndParen() : std::move(node);
-    char Operator = m_currentOperator;
+    std::unique_ptr<BaseAst> ln = !node ? parse_Number() : std::move(node);
+    std::unique_ptr<BaseAst> rn = nullptr;
 
-    if (Operator == '+' || Operator == '-' ||
-        m_currentTokenType == TokenType::END ||
-        m_currentTokenType == TokenType::RPAREN)
-    {
+    char Operator = m_currentOperator;
+    bool unusual_token = Operator == '+' || Operator == '-' || m_currentTokenType == TokenType::END || m_currentTokenType == TokenType::RPAREN;
+
+    if (unusual_token) {
         return ln;
     }
 
-    std::unique_ptr<BaseAst> rn = parse_NumberAndParen();
+    // for like 2(3) = 2*(3)
+    else if (m_currentTokenType == TokenType::LPAREN) {
+        Operator = '*';
+    }
+
+    rn = m_currentTokenType == TokenType::LPAREN ? parse_Paren() : parse_Number();
     return std::make_unique<BinaryNode>(Operator, std::move(ln), std::move(rn));
 
 }
