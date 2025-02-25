@@ -1,8 +1,6 @@
 #include <optional>
 #include <iostream>
 
-#define __DEBUG__
-
 #include "parser.h"
 #include "base_ast_node.h"
 
@@ -39,13 +37,13 @@ void printast(const std::unique_ptr<BaseAst>& node) {
 int main(void) {
     std::string expr;
 
-    fprintf(stdout, "=> ");
+    fprintf(stdout, "$ ");
     std::getline(std::cin, expr);
 
     Parser parse(expr);
 
     std::unique_ptr<BaseAst> parsed_output = parse.parse();
-    // printast(parsed_output);
+    printast(parsed_output);
 
     fprintf(stdout, "%.16Lf\n", eval(parsed_output));
     return 0;
