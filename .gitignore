@@ -1,4 +1,5 @@
-clear
-funIdea.md
 bin
 obj
+lib
+Makefile
+*.make

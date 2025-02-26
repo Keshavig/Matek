@@ -1,18 +1,35 @@
-workspace "fun_math"
+workspace "main"
     configurations { "Debug", "Release" }
 
-project "evaluater"
-    kind "ConsoleApp"
+project "MatekLib"
+    kind "StaticLib"
     language "C++"
-    targetdir "bin/%{cfg.buildcfg}"
+    targetdir "lib/%{cfg.buildcfg}"
 
-    files { "src/**.h", "src/**.cc" }
-    removefiles { "./src/All_In_One_Eval.cc" }
-
-    filter "configurations:Debug"
+    files { "source/**.cc", "source/**.h" }
+    
+    filter "configurations:DEBUG"
         defines { "DEBUG" }
         symbols "On"
 
     filter "configurations:Release"
         defines { "NDEBUG" }
         optimize "On"
+
+project "matekx"
+    kind "ConsoleApp"
+    language "C++"
+    targetdir "bin/%{cfg.buildcfg}"
+
+    files { "tests/*.cc" }
+
+    links { "MatekLib" }
+
+    filter "configurations:DEBUG"
+        defines { "DEBUG" }
+        symbols "On"
+
+    filter "configurations:Release"
+        defines { "NDEBUG" }
+        optimize "On"
+
