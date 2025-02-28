@@ -2,6 +2,7 @@
 
 #include "parser.h"
 #include "node.h"
+#include <cstdint>
 
 class Matek final {
 public:
@@ -12,12 +13,16 @@ public:
     void disableChecks(void);
     std::unique_ptr<BaseAst> parse();
 
+    bool setprecision(size_t precision);
+
     void printast(void) const;
     real_t evaluate();
 
 private:
     real_t privateEval(const std::unique_ptr<BaseAst>& ast);
-    bool docheck = true;
+    bool m_docheck = true;
+
+    size_t m_Precision = DEFAULT_PRECISION;
 
     std::string m_expression;
     std::unique_ptr<BaseAst> m_ast;

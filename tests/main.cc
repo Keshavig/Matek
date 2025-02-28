@@ -1,21 +1,33 @@
 #include "../source/matek.h"
 
 #include <iostream>
+#include <iomanip>
+
+constexpr size_t PRECISION = 10;
 
 int main(void) {
     std::string expression;
 
-    std::cout << "Welcome here [ Hero ] " << std::endl;
-    std::cout << "$ ";
-    std::getline(std::cin, expression);
+    while (true) {
+        std::cout << "$ ";
+        std::getline(std::cin, expression);
 
-    Matek matek;
+        if (expression == "exit" || expression == "q") {
+            return 0;
+        }
 
-    matek.expression(expression);
-    real_t value = matek.evaluate();
+        Matek matek;
 
-    matek.printast();
-    fprintf(stdout, "%.3Lf\n", value);
+        matek.expression(expression);
+        matek.setprecision(PRECISION);
+
+        real_t value = matek.evaluate();
+        std::cout << "---------------------------------------------------------------------\n\n";
+        std::cout << std::fixed << std::setprecision(PRECISION) << value << std::endl;
+        std::cout << "\n\n---------------------------------------------------------------------\n            AST\n";
+
+        matek.printast();
+    }
 
     return 0;
 }

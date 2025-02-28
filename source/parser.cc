@@ -51,12 +51,14 @@ std::unique_ptr<BaseAst> Parser::parse_Number(void) {
         exit(1);
     }
 
+    /* NOTE: this feels unnecessary */
     else if (m_currentTokenType == TokenType::END) {
         fprintf(stderr, "%sfatal error: end of expression was reached%s\n",
                 COLOR_RED, RESET_TERM_COLOR);
         exit(1);
     }
 
+    /*  NOTE: this and TokenType::Operator check should be combined */
     else if (m_currentTokenType != TokenType::NUMBER) {
         fprintf(stderr, "%sError: invalid syntax\n%s", COLOR_RED, RESET_TERM_COLOR);
         fprintf(stderr, "%serror was found with symbol '%s' at position %zu%s\n", COLOR_RED,

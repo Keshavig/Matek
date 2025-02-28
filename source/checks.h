@@ -12,7 +12,7 @@ public:
     bool checkParenSyntax(void) const;
     bool checkOperators(void) const; // check for things like check if #(operators) = #(numbers) - 1 ifnot error
  
-    Checks(const std::string& expression) : m_expression() {};
+    Checks(const std::string& expression) : m_expression(expression) {};
     Checks(const Checks& chks) = delete;
 };
 

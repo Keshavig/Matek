@@ -1,19 +1,26 @@
 #include "matek.h"
 #include "checks.h"
+#include "node.h"
 
-/* Checks are not properly working I think */
+#define EXIT_FAILURE 1
+
 void Matek::expression(const std::string& expr) {
     m_expression = expr;
-    if (docheck) {
+
+    if (m_docheck) {
         Checks check(expr);
         bool retval1 = check.checkParenCount();
         bool retval2 = check.checkParenSyntax();
 
-        if (!retval1)
+        if (!retval1) {
             fprintf(stderr, "error: please close your parenthesis\n");
+            exit(EXIT_FAILURE);
+        }
 
-        if (!retval2)
+        if (!retval2) {
             fprintf(stderr, "error: invalid parenthesis syntax\n");
+            exit(EXIT_FAILURE);
+        }
     }
 }
 
@@ -44,7 +51,7 @@ void Matek::printast(void) const {
     if (!m_ast)
         return;
 
-    m_ast->print();
+    m_ast->print(m_Precision);
     fprintf(stdout , "\n");
 }
 
@@ -56,5 +63,15 @@ real_t Matek::evaluate() {
 }
 
 void Matek::disableChecks(void) {
-    docheck = false;
+    m_docheck = false;
+}
+
+bool Matek::setprecision(size_t precision = DEFAULT_PRECISION) {
+    // remove magic number
+    if (precision > 32) {
+        return false;
+    }
+
+    m_Precision = precision;
+    return true;
 }

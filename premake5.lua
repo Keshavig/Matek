@@ -2,7 +2,7 @@ workspace "main"
     configurations { "Debug", "Release" }
 
 project "MatekLib"
-    kind "StaticLib"
+    kind "SharedLib"
     language "C++"
     targetdir "lib/%{cfg.buildcfg}"
 
