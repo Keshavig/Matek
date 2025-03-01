@@ -2,7 +2,11 @@
 
 #include "parser.h"
 #include "node.h"
-#include <cstdint>
+
+#define EXIT_FAILURE 1
+
+/* Defined in file lexer.cc */
+extern BasicOperators Operators;
 
 class Matek final {
 public:
@@ -21,7 +25,7 @@ public:
 private:
     real_t privateEval(const std::unique_ptr<BaseAst>& ast);
     bool m_docheck = true;
-
+    
     size_t m_Precision = DEFAULT_PRECISION;
 
     std::string m_expression;

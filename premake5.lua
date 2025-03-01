@@ -1,7 +1,7 @@
 workspace "main"
     configurations { "Debug", "Release" }
 
-project "MatekLib"
+project "lib"
     kind "SharedLib"
     language "C++"
     targetdir "lib/%{cfg.buildcfg}"
@@ -23,7 +23,7 @@ project "matekx"
 
     files { "tests/*.cc" }
 
-    links { "MatekLib" }
+    links { "lib" }
 
     filter "configurations:DEBUG"
         defines { "DEBUG" }

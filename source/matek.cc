@@ -2,8 +2,6 @@
 #include "checks.h"
 #include "node.h"
 
-#define EXIT_FAILURE 1
-
 void Matek::expression(const std::string& expr) {
     m_expression = expr;
 
@@ -33,7 +31,7 @@ real_t Matek::privateEval(const std::unique_ptr<BaseAst>& node) {
         real_t left  = Matek::privateEval(std::move(binaryNode->leftNode));
         real_t right = Matek::privateEval(std::move(binaryNode->rightNode));
 
-        std::optional<real_t> retval = operatorsList.runfunc(binaryNode->Operator, left, right);
+        std::optional<real_t> retval = Operators.runfunc(binaryNode->Operator, left, right);
 
         if (!retval) {
             fprintf(stderr, "%serror: invalid operator '%c' %s\n", COLOR_RED, binaryNode->Operator, RESET_TERM_COLOR);

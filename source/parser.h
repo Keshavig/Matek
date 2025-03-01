@@ -8,11 +8,11 @@
 #include "node.h"
 #include "lexer.h"
 
-extern BasicOperators operatorsList; // declared/defined in @lexer.cc
+// declared/defined in @lexer.cc
+extern BasicOperators Operators;
 
 #define COLOR_RED "\033[38;2;255;108;107m" // Color #ff6c6b
 #define RESET_TERM_COLOR "\033[0m"
-
 
 class Parser {
 public:
@@ -31,7 +31,6 @@ private:
     size_t m_currentTokenPosition;
 
 private:
-
     void getNewCurrentToken(void);
 
     std::unique_ptr<BaseAst> parse_lowPrecedence();

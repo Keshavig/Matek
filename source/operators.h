@@ -6,18 +6,29 @@
 
 #include "token.h"
 
+
+enum OperatorPrecedence {
+    HIGH = 0,
+    LOW  = 1,
+};
+
 using real_t = long double;
 typedef real_t (*functionPtr) (const real_t val1, const real_t val2);
 
 struct singleOperator {
     char  operatorSymbol;
-    functionPtr operatorFunction;
-    TokenType tokenType = TokenType::OPERATOR;
+
+    inline real_t eval(real_t a, real_t b) const;
+    inline OperatorPrecedence getPrecedence(void) const;
 
     singleOperator(const singleOperator& so) = default;
-    singleOperator(const char os, const functionPtr of): operatorSymbol(os), operatorFunction(of) {}
+    singleOperator(const char os, const OperatorPrecedence precedence, const functionPtr of)
+        : operatorSymbol(os), m_operatorFunction(of), m_Precedence(precedence) {}
 
-    ~singleOperator() = default;
+private:
+    functionPtr m_operatorFunction;
+    OperatorPrecedence  m_Precedence;
+
 };
 
 using operatorList = std::vector<singleOperator>;
@@ -29,7 +40,7 @@ public:
 
     /* Append functions */
     void addlist(const operatorList& OperatorList);
-    void addone(const singleOperator& singleOperator);
+    void add(const singleOperator& singleOperator);
 
     /* Removing functions */
     void overwrite(const operatorList& newOperatorList);
