@@ -1,10 +1,15 @@
-#include <string>
-#include <stdexcept>
-
 #include "parser.h"
 #include "token.h"
 
-Parser::Parser(const std::string& expression) : m_expression(expression), lexer(expression) {}
+// These all are just to show what stdlibs are being used, this will work 
+// even if we remove them (as they are already included in ^ header files)
+
+#include <cstdio>
+#include <iostream>
+#include <memory>
+#include <string_view>
+
+Parser::Parser(const std::string_view expression) : m_expression(expression), lexer(expression) {}
 
 void Parser::getNewCurrentToken(void) {
     Token t = lexer.getnextToken();
@@ -43,29 +48,28 @@ std::unique_ptr<BaseAst> Parser::parse_Number(void) {
     }
 
     else if (m_currentTokenType == TokenType::OPERATOR) {
-        fprintf(stderr, "%sfatal error: invalid syntax at %zu: '%s'%s\n", COLOR_RED,
-                m_currentTokenPosition, m_currentTokenSymbol.c_str(), RESET_TERM_COLOR);
-        exit(1);
+        std::cout << COLOR_RED << "fatal error: invalid syntax at " << m_currentTokenPosition << \
+            ": " << m_currentTokenSymbol  << RESET_TERM_COLOR << '\n';
+        exit(EXIT_FAILURE);
     }
 
+    /* NOTE: this feels unnecessary */
     else if (m_currentTokenType == TokenType::END) {
         fprintf(stderr, "%sfatal error: end of expression was reached%s\n",
                 COLOR_RED, RESET_TERM_COLOR);
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
+    /*  NOTE: this and TokenType::Operator check should be combined */
     else if (m_currentTokenType != TokenType::NUMBER) {
         fprintf(stderr, "%sError: invalid syntax\n%s", COLOR_RED, RESET_TERM_COLOR);
-        fprintf(stderr, "%serror was found with symbol '%s' at position %zu%s\n", COLOR_RED,
-                m_currentTokenSymbol.c_str(),
-                m_currentTokenPosition,
-                RESET_TERM_COLOR);;
+        std::cerr << COLOR_RED << "invalid character was found at position " << m_currentTokenPosition << \
+            " of " << m_currentTokenSymbol << RESET_TERM_COLOR << '\n';
 
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
-    std::string number;
-    number = m_currentTokenSymbol;
+    const std::string number(m_currentTokenSymbol);
     std::unique_ptr<BaseAst> numberNode;
 
     try {
@@ -73,13 +77,13 @@ std::unique_ptr<BaseAst> Parser::parse_Number(void) {
     }
 
     catch (const std::invalid_argument& e) {
-        fprintf(stdout, "%serror: invalid syntax (found: numbers containing characters)%s\n", COLOR_RED, RESET_TERM_COLOR);
-        exit(1);
+        std::cerr << COLOR_RED << "Error: invalid syntax " << number << '\n' << RESET_TERM_COLOR;
+        exit(EXIT_FAILURE);
     }
 
     catch (const std::out_of_range& err) {
-        fprintf(stdout, "%serror: %s number is way too big%s\n", COLOR_RED, number.c_str(), RESET_TERM_COLOR);
-        exit(1);
+        std::cerr << COLOR_RED << "Error: number out of bounds\n" << RESET_TERM_COLOR;
+        exit(EXIT_FAILURE);
     }
 
     getNewCurrentToken();

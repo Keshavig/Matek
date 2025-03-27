@@ -1,19 +1,28 @@
 #include <cstdio>
+#include <string_view>
+
 #include "lexer.h"
+
+Lexer::Lexer(const std::string_view expression) : m_expression(expression.data()), currentTokenPosition(0) {
+    if (m_expression.empty()) {
+        fprintf(stderr, "Empty Expression\n");
+        exit(1);
+    }
+}
 
 real_t divide(real_t a, real_t b) {
     if (b != 0)
         return a/b;
 
-    fprintf(stderr, "math error: division by zero was found\n");
+    fprintf(stderr, "Math Error: Division by zero\n");
     exit(1);
 }
 
-BasicOperators operatorsList = {
-    { '+', [](real_t a, real_t b) -> real_t { return a+b; } },
-    { '-', [](real_t a, real_t b) -> real_t { return a-b; } },
-    { '*', [](real_t a, real_t b) -> real_t { return a*b; } },
-    { '/', divide},
+BasicOperators Operators = {
+    { '+', OperatorPrecedence::LOW , [](real_t a, real_t b) -> real_t { return a+b; } },
+    { '-', OperatorPrecedence::LOW , [](real_t a, real_t b) -> real_t { return a-b; } },
+    { '*', OperatorPrecedence::HIGH, [](real_t a, real_t b) -> real_t { return a*b; } },
+    { '/', OperatorPrecedence::HIGH, divide},
 };
 
 bool Lexer::isaspace(const char ch) {
@@ -31,13 +40,7 @@ bool Lexer::isadigit(const char ch) {
 }
 
 Token Lexer::getnextToken(void) {
-    if (m_expression.empty()) {
-        fprintf(stderr, "expression is empty!!\n");
-        exit(1);
-    }
-
     const size_t exprlen = m_expression.length();
-
     if (currentTokenPosition >= exprlen) {
         return {"", TokenType::END};
     }
@@ -48,7 +51,7 @@ Token Lexer::getnextToken(void) {
     }
 
     /* Storing the number */
-    if ( isadigit(m_expression[currentTokenPosition]) || m_expression[currentTokenPosition] == '.') {
+    if (isadigit(m_expression[currentTokenPosition]) || m_expression[currentTokenPosition] == '.') {
         std::string number = "";
         char currentReadingToken = m_expression[currentTokenPosition];
 
@@ -70,13 +73,13 @@ Token Lexer::getnextToken(void) {
         return { ")", TokenType::RPAREN };
     }
 
-    for (size_t i = 0; i < operatorsList.size(); i++) {
-        if (m_expression[currentTokenPosition] == operatorsList.get(i).operatorSymbol) {
+    for (size_t i = 0; i < Operators.size(); i++) {
+        if (m_expression[currentTokenPosition] == Operators.get(i).operatorSymbol) {
             return { std::string(1, m_expression[currentTokenPosition++]), TokenType::OPERATOR }; // Return then increment
         }
     }
 
-    fprintf(stderr, "found Unexpected token at %zu '%c'\n", currentTokenPosition, m_expression.c_str()[currentTokenPosition]);
+    fprintf(stderr, "Found Unexpected token at %zu '%c'\n", currentTokenPosition, m_expression[currentTokenPosition]);
     exit(1);
 }
 

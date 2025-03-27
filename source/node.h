@@ -1,14 +1,17 @@
 #pragma once
 
+#include <iostream>
+#include <iomanip>
 #include <memory>
-#include <cstdio>
+
+constexpr size_t DEFAULT_PRECISION = 3;
 
 using real_t = long double; /* also declared in @operators.h */
 
 class BaseAst {
 public:
     virtual ~BaseAst() = default;
-    virtual void print() const = 0;
+    virtual void print(size_t precision) const = 0;
 
 };
 
@@ -23,14 +26,14 @@ public:
     const std::unique_ptr<BaseAst> leftNode;
     const std::unique_ptr<BaseAst> rightNode;
 
-    void print() const override {
-        fprintf(stdout, "(");
-        leftNode->print();
+    void print(size_t precision) const override {
+        std::cout << '(';
+        leftNode->print(precision);
 
-        fprintf(stdout, " %c ", Operator);
-        rightNode->print();
+        std::cout << ' ' << Operator << ' ';
+        rightNode->print(precision);
 
-        fprintf(stdout, ")");
+        std::cout <<  ") "; // for looks
     }
 };
 
@@ -39,7 +42,7 @@ public:
     const real_t value;
     NumberNode(const real_t _value) : value(_value) {}
 
-    void print() const override {
-        fprintf(stdout, "%.5Lf", value);
+    void print(size_t precision) const override {
+        std::cout << std::fixed << std::setprecision(precision) <<  value;
     }
 };
