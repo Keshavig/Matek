@@ -1,5 +1,4 @@
 # Matek
-Pronounced MayTech
 
 ## Dependencies
 - premake
