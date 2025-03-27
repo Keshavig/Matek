@@ -1,7 +1,5 @@
 #pragma once
-
 #include "parser.h"
-#include "node.h"
 
 #define EXIT_FAILURE 1
 
@@ -13,7 +11,7 @@ public:
     Matek(void) = default;
     Matek(const Matek& mtk) = delete;
 
-    void expression(const std::string& expr);
+    void expression(const std::string_view expr);
     void disableChecks(void);
     std::unique_ptr<BaseAst> parse();
 
@@ -28,6 +26,6 @@ private:
     
     size_t m_Precision = DEFAULT_PRECISION;
 
-    std::string m_expression;
+    std::string_view m_expression;
     std::unique_ptr<BaseAst> m_ast;
 };

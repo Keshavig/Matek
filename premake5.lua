@@ -1,7 +1,7 @@
 workspace "main"
     configurations { "Debug", "Release" }
 
-project "lib"
+project "matekx"
     kind "SharedLib"
     language "C++"
     targetdir "lib/%{cfg.buildcfg}"
@@ -16,14 +16,14 @@ project "lib"
         defines { "NDEBUG" }
         optimize "On"
 
-project "matekx"
+project "exprx"
     kind "ConsoleApp"
     language "C++"
     targetdir "bin/%{cfg.buildcfg}"
 
     files { "tests/*.cc" }
 
-    links { "lib" }
+    links { "matekx" }
 
     filter "configurations:DEBUG"
         defines { "DEBUG" }

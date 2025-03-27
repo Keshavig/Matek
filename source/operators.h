@@ -2,21 +2,19 @@
 
 #include <vector>
 #include <optional>
-#include <initializer_list>
 
 #include "token.h"
-
 
 enum OperatorPrecedence {
     HIGH = 0,
     LOW  = 1,
 };
 
-using real_t = long double;
+using   real_t = long double;
 typedef real_t (*functionPtr) (const real_t val1, const real_t val2);
 
 struct singleOperator {
-    char  operatorSymbol;
+    char operatorSymbol;
 
     inline real_t eval(real_t a, real_t b) const;
     inline OperatorPrecedence getPrecedence(void) const;
@@ -28,7 +26,6 @@ struct singleOperator {
 private:
     functionPtr m_operatorFunction;
     OperatorPrecedence  m_Precedence;
-
 };
 
 using operatorList = std::vector<singleOperator>;

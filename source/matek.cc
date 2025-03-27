@@ -1,8 +1,9 @@
 #include "matek.h"
 #include "checks.h"
-#include "node.h"
 
-void Matek::expression(const std::string& expr) {
+#include <string_view>
+
+void Matek::expression(const std::string_view expr) {
     m_expression = expr;
 
     if (m_docheck) {

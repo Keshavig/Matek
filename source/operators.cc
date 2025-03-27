@@ -12,7 +12,7 @@ inline OperatorPrecedence singleOperator::getPrecedence(void) const {
     return m_Precedence;
 }
 
-/* CLASS BasicOperators STUFF*/
+/* CLASS BasicOperators STUFF */
 
 BasicOperators::BasicOperators(const operatorList& basicOperators): m_OperatorList(basicOperators) {}
 

@@ -4,10 +4,16 @@
 #include <cmath>
 #include <iomanip>
 
-constexpr size_t PRECISION = 10;
+constexpr size_t PRECISION = 32;
+static size_t called_for = 0;
 
 static inline real_t modulo(real_t x, real_t y) {
     return static_cast<int>(x) % static_cast<int>(y);
+}
+
+void* operator new(const size_t size) {
+    called_for++;
+    return malloc(size);
 }
 
 int main(void) {
@@ -17,10 +23,11 @@ int main(void) {
     Operators.add({ '%', OperatorPrecedence::HIGH , modulo   });
 
     while (true) {
-        std::cout << "$ ";
+        std::cout << ">> ";
         std::getline(std::cin, expression);
 
         if (expression == "exit" || expression == "q") {
+            std::cout << "New called for " << called_for << " Times\n";
             return 0;
         }
 
@@ -29,11 +36,12 @@ int main(void) {
         matek.setprecision(PRECISION);
         matek.expression(expression);
 
-        auto value = matek.evaluate();
 
-        std::cout << std::fixed << std::setprecision(PRECISION) << value << std::endl;
+        real_t value = matek.evaluate();
+
         matek.printast();
+        std::cout << std::fixed << std::setprecision(PRECISION) << value << std::endl;
     }
 
-    return 0;
+    return EXIT_SUCCESS;
 }

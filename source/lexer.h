@@ -1,22 +1,19 @@
 #pragma once
 
-#include <string>
-
-#include "token.h"
 #include "operators.h"
+#include <string_view>
 
 class Lexer {
-    private:
-        const std::string& m_expression;
-        size_t currentTokenPosition;
+private:
+    const std::string_view m_expression;
+    size_t currentTokenPosition;
 
-    public:
-        Lexer(const std::string& expression) : m_expression(expression), currentTokenPosition(0) {}
-        Token getnextToken(void);
+public:
+    Lexer(const std::string_view expression);
+    Token getnextToken(void);
+    size_t getindex(void) const;
 
-        size_t getindex(void) const;
-
-    private:
-        bool isaspace(const char ch);
-        bool isadigit(const char ch);
+private:
+    bool isaspace(const char ch);
+    bool isadigit(const char ch);
 };

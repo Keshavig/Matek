@@ -2,9 +2,6 @@
 
 /* This file parses the tokens into an ast */
 
-#include <memory>
-#include <string>
-
 #include "node.h"
 #include "lexer.h"
 
@@ -17,15 +14,15 @@ extern BasicOperators Operators;
 class Parser {
 public:
     Parser(const Parser &) = delete;
-    Parser(const std::string& expression);
+    Parser(const std::string_view expression);
 
     std::unique_ptr<BaseAst> parse();
 
 private:
-    const std::string m_expression;
+    const std::string_view m_expression;
     Lexer lexer;
 
-    std::string m_currentTokenSymbol;
+    std::string_view m_currentTokenSymbol;
     TokenType m_currentTokenType;
     char m_currentOperator;
     size_t m_currentTokenPosition;

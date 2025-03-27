@@ -17,10 +17,10 @@ enum class TokenType {
 };
 
 struct Token {
-    std::string tokenSymbol;
+    std::string_view tokenSymbol;
     TokenType tokenType;
 
-    Token() = default;
+    Token() = delete;
     Token(const Token& tkn) = default;
-    Token(const std::string& ts, const TokenType tt) : tokenSymbol(ts), tokenType(tt) {}
+    Token(const std::string_view ts, const TokenType tt) : tokenSymbol(ts), tokenType(tt) {}
 };
