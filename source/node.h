@@ -17,14 +17,14 @@ public:
 
 class BinaryNode : public BaseAst {
 public:
-    BinaryNode(char Operatorr, std::unique_ptr<BaseAst> leftnode, std::unique_ptr<BaseAst> rightnode) :
+    const std::string Operator;
+    const std::unique_ptr<BaseAst> leftNode;
+    const std::unique_ptr<BaseAst> rightNode;
+
+    BinaryNode(const std::string Operatorr, std::unique_ptr<BaseAst> leftnode, std::unique_ptr<BaseAst> rightnode) :
         Operator(Operatorr),
         leftNode(std::move(leftnode)),
         rightNode(std::move(rightnode)) {}
-
-    const char Operator;
-    const std::unique_ptr<BaseAst> leftNode;
-    const std::unique_ptr<BaseAst> rightNode;
 
     void print(size_t precision) const override {
         std::cout << '(';

@@ -2,7 +2,7 @@
 #include "operators.h"
 
 /* This is defined in @lexer.cc */
-extern BasicOperators basicOperators;
+extern BinaryOperators basicOperators;
 
 inline static bool isaspace(const char character) {
     return (character == ' '  || character == '\t' ||
@@ -10,7 +10,7 @@ inline static bool isaspace(const char character) {
     character == '\a');
 }
 
-static size_t getOccurence(const std::string_view tofindin, const char character) {
+static size_t getOccurence(const std::string& tofindin, const char character) {
     size_t length = tofindin.length();
     size_t occurenceCount = 0;
 
@@ -23,7 +23,7 @@ static size_t getOccurence(const std::string_view tofindin, const char character
 }
 
 // for str = "abcc", and character = 'c' this shall return 2+3 = 5
-static size_t getOccurencesPositionSum(const std::string_view str, const char character) {
+static size_t getOccurencesPositionSum(const std::string& str, const char character) {
     size_t sum = 0, length = str.length();
 
     for (size_t i = 0; i < length; ++i) {

@@ -4,9 +4,7 @@
 
 #include "node.h"
 #include "lexer.h"
-
-// declared/defined in @lexer.cc
-extern BasicOperators Operators;
+#include "operators.h"
 
 #define COLOR_RED "\033[38;2;255;108;107m" // Color #ff6c6b
 #define RESET_TERM_COLOR "\033[0m"
@@ -14,17 +12,23 @@ extern BasicOperators Operators;
 class Parser {
 public:
     Parser(const Parser &) = delete;
-    Parser(const std::string_view expression);
+    Parser(const BinaryOperators& Operators, const std::string& expression);
 
     std::unique_ptr<BaseAst> parse();
 
 private:
-    const std::string_view m_expression;
+    const std::string m_expression;
     Lexer lexer;
 
-    std::string_view m_currentTokenSymbol;
+    /*  TODO: Organize these all into a struct or something */
+
+    const BinaryOperators& m_Operators;
+
+    std::string m_currentTokenSymbol;
+    std::string m_currentOperator;
+
+    OperatorPrecedence m_currentOperatorPrecedence;
     TokenType m_currentTokenType;
-    char m_currentOperator;
     size_t m_currentTokenPosition;
 
 private:
