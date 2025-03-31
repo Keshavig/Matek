@@ -1,19 +1,23 @@
 #include "lexer.h"
+#include "operators.h"
 
 /*  TODO: Try to change most of std::string to either string_view or char* 
  *  To reduce allocation ==> Optimization :) */
 
-BasicOperators Operators = {
-    { [](real_t a, real_t b) { return a+b; }, OperatorPrecedence::Low,  "+", "add" },
-    { [](real_t a, real_t b) { return a-b; }, OperatorPrecedence::Low,  "-", "sub" },
-    { [](real_t a, real_t b) { return a*b; }, OperatorPrecedence::High, "*", "mul" },
-    { [](real_t a, real_t b) { return a/b; }, OperatorPrecedence::High, "/", "div" },
-};
+/* TODO: Let users provide their own operators like: Matek start(Operators, Expression); */
 
-Lexer::Lexer(const std::string& expression) :
+// BinaryOperators Operators = {
+//     { [](real_t a, real_t b) { return a+b; }, OperatorPrecedence::Low,  "+", "add" },
+//     { [](real_t a, real_t b) { return a-b; }, OperatorPrecedence::Low,  "-", "sub" },
+//     { [](real_t a, real_t b) { return a*b; }, OperatorPrecedence::High, "*", "mul" },
+//     { [](real_t a, real_t b) { return a/b; }, OperatorPrecedence::High, "/", "div" },
+// };
+
+Lexer::Lexer(const BinaryOperators& Operators, const std::string& expression) :
     m_expression(expression),
+    m_Operators(Operators),
     m_index(-1),
-    m_operatorsLength(Operators.size()) /* NOTE: operatorsLength is only used at one place */
+    m_operatorsLength(Operators.length()) /* NOTE: operatorsLength is only used at one place */
 {
     if (m_expression.empty()) {
         std::cerr << "Empty expression\n";
@@ -72,25 +76,21 @@ Token Lexer::getnextToken(void) {
     /* Skip Spaces */
     while (isaspace(m_expression[m_index])) ++m_index;
 
-    /* Storing the number */
-    if (isadigit(m_expression[m_index]) || m_expression[m_index] == '.') {
-        std::string number;
+    std::string number;
+    while (m_index < exprlen && isadigit(m_expression[m_index]) || m_expression[m_index] == '.')
+    {
+        number += m_expression[m_index];
+        char next = m_expression[m_index+1];
 
-        while (m_index < exprlen)
-        {
-            number += m_expression[m_index];
-            char next = m_expression[m_index+1];
-
-            if (isadigit(next) || next == '.') {
-                ++m_index;
-                continue;
-            }
-
-            return {number, TokenType::NUMBER};
+        if (isadigit(next) || next == '.') {
+            ++m_index;
+            continue;
         }
+
+        return {number, TokenType::NUMBER};
     }
 
-    else if (m_expression[m_index] == '(' || m_expression[m_index] == ')')
+    if (m_expression[m_index] == '(' || m_expression[m_index] == ')')
         return { std::string(1, m_expression[m_index]), m_expression[m_index] == '(' ? TokenType::LPAREN : TokenType::RPAREN };
 
     else if (isletter(m_expression[m_index]) || isvalidSpecialCharacter(m_expression[m_index])) {
@@ -103,8 +103,8 @@ Token Lexer::getnextToken(void) {
         /* ------------------------------------------------------------------------- */
 
         for (size_t i = 0; i < m_operatorsLength; ++i) {
-            singleOperator x = Operators.get(i);
-            if (x.isvalidOperatorSymbol(symbol)) {
+            singleOperator x = m_Operators.get(i);
+            if (x.isvalidSymbol(symbol)) {
                 return { symbol, TokenType::OPERATOR };
             }
         }

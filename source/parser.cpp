@@ -4,19 +4,15 @@
 // These all are just to show what stdlibs are being used, this will work 
 // even if we remove them (as they are already included in ^ header files)
 
-// TOOD: make m_currentOperatorPrecedence
+// TODO: make m_currentOperatorPrecedence
 
 #include <cstdio>
 #include <iostream>
 #include <memory>
 
 /* NOTE: Here we are not checking if `Operator` is a valid operator or not because that is already checked by the lexer */
-static OperatorPrecedence getPrecedence(const std::string& Operator) {
-    singleOperator sopr = Operators.get(Operator);
-    return sopr.getPrecedence();
-}
-
-Parser::Parser(const std::string& expression) : m_expression(expression), lexer(expression) {}
+Parser::Parser(const BinaryOperators& Operators, const std::string& expression) :
+    m_expression(expression), lexer(Operators, expression), m_Operators(Operators) {}
 
 void Parser::getNewCurrentToken(void) {
     Token t = lexer.getnextToken();
@@ -44,7 +40,7 @@ std::unique_ptr<BaseAst> Parser::parse_Number(void) {
        (m_currentOperator == '+' || m_currentOperator == '-') && m_currentTokenPosition != m_expression.size()) {
     */
 
-    if (m_currentTokenType == TokenType::OPERATOR &&  getPrecedence(m_currentOperator) == OperatorPrecedence::Low &&
+    if (m_currentTokenType == TokenType::OPERATOR &&  m_Operators.getPrecedence(m_currentOperator) == OperatorPrecedence::Low &&
         m_currentTokenPosition != m_expression.size()) {
 
         std::unique_ptr<BaseAst> lNumber = std::make_unique<NumberNode>(0);
@@ -108,7 +104,7 @@ std::unique_ptr<BaseAst> Parser::get_highPrecedenceNodes(std::unique_ptr<BaseAst
     std::unique_ptr<BaseAst> rn = nullptr;
 
     std::string Operator = m_currentOperator;
-    bool unusual_token = getPrecedence(Operator) == OperatorPrecedence::Low || m_currentTokenType == TokenType::END || m_currentTokenType == TokenType::RPAREN;
+    bool unusual_token = m_Operators.getPrecedence(Operator) == OperatorPrecedence::Low || m_currentTokenType == TokenType::END || m_currentTokenType == TokenType::RPAREN;
 
     if (unusual_token) {
         return ln;
@@ -116,8 +112,7 @@ std::unique_ptr<BaseAst> Parser::get_highPrecedenceNodes(std::unique_ptr<BaseAst
 
     /* for like 2(3) = 2*(3) */
     /* Only do this if '*' [Multiplication] Operator Exists */
-
-    else if (m_currentTokenType == TokenType::LPAREN) {
+    if (m_currentTokenType == TokenType::LPAREN) {
         Operator = "*";
     }
 
@@ -136,8 +131,7 @@ std::unique_ptr<BaseAst> Parser::parse_highPrecedence() {
     { 
         hpnode = get_highPrecedenceNodes(std::move(hpnode));
     }
-    while (getPrecedence(m_currentOperator) != OperatorPrecedence::Low &&
-    m_currentTokenType != TokenType::END && m_currentTokenType != TokenType::RPAREN);
+    while (m_Operators.getPrecedence(m_currentOperator) != OperatorPrecedence::Low && m_currentTokenType != TokenType::END && m_currentTokenType != TokenType::RPAREN);
 
     return hpnode;
 }

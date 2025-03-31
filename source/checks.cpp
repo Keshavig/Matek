@@ -2,7 +2,7 @@
 #include "operators.h"
 
 /* This is defined in @lexer.cc */
-extern BasicOperators basicOperators;
+extern BinaryOperators basicOperators;
 
 inline static bool isaspace(const char character) {
     return (character == ' '  || character == '\t' ||

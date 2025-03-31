@@ -1,14 +1,13 @@
 #pragma once
-#include "parser.h"
+
+#include "node.h"
+#include "operators.h"
 
 #define EXIT_FAILURE 1
 
-/* Defined in file lexer.cc */
-extern BasicOperators Operators;
-
 class Matek final {
 public:
-    Matek(void) = default;
+    Matek(const BinaryOperators& Operators) : m_Operators(Operators) {}
     Matek(const Matek& mtk) = delete;
 
     void expression(const std::string& expr);
@@ -21,11 +20,13 @@ public:
     real_t evaluate();
 
 private:
-    real_t privateEval(const std::unique_ptr<BaseAst>& ast);
-    bool m_docheck = true;
-    
-    size_t m_Precision = DEFAULT_PRECISION;
+    const BinaryOperators& m_Operators;
 
     std::string m_expression;
     std::unique_ptr<BaseAst> m_ast;
+
+    bool m_docheck = true;
+    size_t m_Precision = DEFAULT_PRECISION;
+
+    real_t eval(const std::unique_ptr<BaseAst>& ast);
 };

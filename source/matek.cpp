@@ -1,11 +1,13 @@
 #include "matek.h"
 #include "checks.h"
+#include "operators.h"
 #include "parser.h"
 
 void Matek::expression(const std::string& expr) {
     m_expression = expr;
 
-    if (m_docheck) {
+    if (m_docheck)
+    {
         Checks check(expr);
         bool retval1 = check.checkParenCount();
         bool retval2 = check.checkParenSyntax();
@@ -22,23 +24,20 @@ void Matek::expression(const std::string& expr) {
     }
 }
 
-real_t Matek::privateEval(const std::unique_ptr<BaseAst>& node) {
+real_t Matek::eval(const std::unique_ptr<BaseAst>& node) {
     if (auto numberNode = dynamic_cast<NumberNode*>(node.get())) {
         return numberNode->value;
     }
 
     else if (auto binaryNode = dynamic_cast<BinaryNode*>(node.get())) {
-        real_t left  = Matek::privateEval(std::move(binaryNode->leftNode));
-        real_t right = Matek::privateEval(std::move(binaryNode->rightNode));
+        real_t left  = Matek::eval(std::move(binaryNode->leftNode));
+        real_t right = Matek::eval(std::move(binaryNode->rightNode));
 
-        std::optional<real_t> retval = Operators.runfunc(binaryNode->Operator, left, right);
-
-        if (!retval) {
-            std::cerr << COLOR_RED << "ERROR: Invalid operator `" << binaryNode->Operator << '`' << RESET_TERM_COLOR << '\n';
-            exit(EXIT_FAILURE);
+        size_t len = m_Operators.length();
+        for (size_t i = 0; i < len; ++i) {
+            singleOperator currentOperator = m_Operators.get(i);
+            if (currentOperator.isvalidSymbol(binaryNode->Operator)) return currentOperator.m_function(left, right);
         }
-
-        return retval.value();
     }
 
     std::cerr << COLOR_RED << "ERROR: Invalid ast" << RESET_TERM_COLOR << '\n';
@@ -46,18 +45,17 @@ real_t Matek::privateEval(const std::unique_ptr<BaseAst>& node) {
 }
 
 void Matek::printast(void) const {
-    if (!m_ast)
-        return;
+    if (!m_ast) return;
 
     m_ast->print(m_Precision);
-    fprintf(stdout , "\n");
+    std::cout << '\n';
 }
 
 real_t Matek::evaluate() {
-    Parser parser(m_expression);
+    Parser parser(m_Operators, m_expression);
     m_ast = parser.parse();
 
-    return privateEval(m_ast);
+    return eval(m_ast);
 }
 
 void Matek::disableChecks(void) {

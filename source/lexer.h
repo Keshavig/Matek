@@ -5,6 +5,7 @@
 class Lexer {
 private:
     const std::string m_expression;
+    const BinaryOperators& m_Operators;
     const size_t m_operatorsLength;
 
     int m_index;
@@ -12,7 +13,7 @@ private:
 public:
     Lexer() = delete;
     Lexer(const Lexer& l) = delete;
-    Lexer(const std::string& expression);
+    Lexer(const BinaryOperators& Operators, const std::string& expression);
 
     Token getnextToken(void);
     size_t getindex(void) const;
