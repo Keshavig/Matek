@@ -4,15 +4,6 @@
 /*  TODO: Try to change most of std::string to either string_view or char* 
  *  To reduce allocation ==> Optimization :) */
 
-/* TODO: Let users provide their own operators like: Matek start(Operators, Expression); */
-
-// BinaryOperators Operators = {
-//     { [](real_t a, real_t b) { return a+b; }, OperatorPrecedence::Low,  "+", "add" },
-//     { [](real_t a, real_t b) { return a-b; }, OperatorPrecedence::Low,  "-", "sub" },
-//     { [](real_t a, real_t b) { return a*b; }, OperatorPrecedence::High, "*", "mul" },
-//     { [](real_t a, real_t b) { return a/b; }, OperatorPrecedence::High, "/", "div" },
-// };
-
 Lexer::Lexer(const BinaryOperators& Operators, const std::string& expression) :
     m_expression(expression),
     m_Operators(Operators),
