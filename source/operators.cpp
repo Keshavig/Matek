@@ -66,15 +66,6 @@ void BinaryOperators::add(const singleOperator& singleOperator) {
     m_OperatorList.push_back(singleOperator);
 }
 
-singleOperator BinaryOperators::get(const size_t position) const {
-    if (position > m_OperatorList.size())
-        return { nullptr, OperatorPrecedence::None, "NIL" }; /* just does not matter */
-
-    return m_OperatorList[position];
-}
-
-
-/* NOTE: what is this */
 singleOperator BinaryOperators::get(const std::string& Operator) const {
     size_t pos = ERRCODE, length = m_OperatorList.size();
 
@@ -85,9 +76,16 @@ singleOperator BinaryOperators::get(const std::string& Operator) const {
         }
     }
 
-    /* Info: We return NIL just so we dont get the warning by the singleOperators constructor for having an empty argument pack */
-    if (pos == ERRCODE) return {nullptr, OperatorPrecedence::None, "NIL"};
+    /* NOTE: We return NIL just so we dont get the warning by the singleOperators constructor for having an empty argument pack */
+    if (pos == ERRCODE) return {nullptr, OperatorPrecedence::None, NIL};
     return get(pos);
+}
+
+singleOperator BinaryOperators::get(const size_t position) const {
+    if (position > m_OperatorList.size())
+        return {nullptr, OperatorPrecedence::None, NIL};
+
+    return m_OperatorList[position];
 }
 
 OperatorPrecedence BinaryOperators::getPrecedence(const std::string& Operator) const {
@@ -98,39 +96,3 @@ OperatorPrecedence BinaryOperators::getPrecedence(const std::string& Operator) c
 size_t BinaryOperators::length(void) const {
     return m_OperatorList.size();
 }
-
-/* NOTE: `Remove` functions */
-// void BasicOperators::overwrite(const std::vector<singleOperator>& newOperatorList) {
-//     size_t size = newOperatorList.size();
-//
-//     m_OperatorList.clear();
-//     m_OperatorList.reserve(size);
-//
-//     for (size_t idx = 0; idx < size; ++idx) {
-//         m_OperatorList.emplace_back(newOperatorList[idx]);
-//     }
-// }
-
-// void BasicOperators::removeAt(const size_t position) {
-//     if (position > m_OperatorList.size()) {
-//         return;
-//     }
-//
-//     m_OperatorList.erase(m_OperatorList.begin() + position);
-// }
-
-
-// void BasicOperators::remove(const std::string_view osymbol) {
-//     size_t pos = ERRCODE, length = m_OperatorList.size();
-//
-//     for (size_t idx = 0; idx < length; ++idx) {
-//         if (m_OperatorList[idx].isvalidOperatorSymbol(osymbol)) {
-//             pos = idx;
-//         }
-//     }
-//
-//     if (pos != ERRCODE) {
-//         m_OperatorList.erase(m_OperatorList.begin() + pos);
-//         return;
-//     }
-// }
