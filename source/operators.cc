@@ -1,26 +1,40 @@
+#include <optional>
 #include "operators.h"
 
-#include <optional>
+constexpr size_t ERRCODE = -1;
 
-/* STRUCT singleOperator STUFF */
+/* NOTE: STRUCT singleOperator STUFF */
 
-inline real_t singleOperator::eval(real_t x, real_t y) const {
+real_t singleOperator::eval(real_t x, real_t y) const {
     return m_operatorFunction(x, y);
 }
 
-inline OperatorPrecedence singleOperator::getPrecedence(void) const {
+OperatorPrecedence singleOperator::getPrecedence(void) const {
     return m_Precedence;
 }
 
-/* CLASS BasicOperators STUFF */
+/*  TODO: Optimize this stuff with hashTable or something */
+bool singleOperator::isvalidOperatorSymbol(const std::string& operatorSymbol) const {
+    const size_t length = m_operatorNames.size();
 
-BasicOperators::BasicOperators(const operatorList& basicOperators): m_OperatorList(basicOperators) {}
+    for (size_t i = 0; i < length; ++i) {
+        if (m_operatorNames[i] == operatorSymbol) {
+            return true;
+        }
+    }
 
-void BasicOperators::addlist(const operatorList& operatorList) {
-    size_t opplistLen = operatorList.size();
+    return false;
+}
 
-    for (size_t idx = 0; idx < opplistLen; idx++) {
-        m_OperatorList.emplace_back(operatorList[idx]);
+/* NOTE: CLASS BasicOperators STUFF */
+
+BasicOperators::BasicOperators(const std::vector<singleOperator>& basicOperators): m_OperatorList(basicOperators) {}
+
+void BasicOperators::addlist(const std::vector<singleOperator>& operatorList) {
+    const size_t length = operatorList.size();
+
+    for (size_t i = 0; i < length; ++i) {
+        m_OperatorList.emplace_back(operatorList[i]);
     }
 }
 
@@ -29,60 +43,78 @@ void BasicOperators::add(const singleOperator& singleOperator) {
 }
 
 singleOperator BasicOperators::get(const size_t position) const {
-    /* If pos > m_OperatorList.size() then just return a struct with no operator and nullptr*/
     if (position > m_OperatorList.size())
-        return {' ', OperatorPrecedence::LOW, nullptr}; /* just does not matter */
+        return { nullptr, OperatorPrecedence::None, "NIL" }; /* just does not matter */
 
-    return m_OperatorList.at(position);
-}
-
-void BasicOperators::overwrite(const operatorList& newOperatorList) {
-    size_t size = newOperatorList.size();
-
-    m_OperatorList.clear();
-    m_OperatorList.reserve(size);
-
-    for (size_t idx = 0; idx < size; idx++) {
-        m_OperatorList.emplace_back(newOperatorList[idx]);
-    }
-}
-
-size_t BasicOperators::size(void) const {
-    return m_OperatorList.size();
-}
-
-void BasicOperators::removeAt(const size_t position) {
-    if (position > m_OperatorList.size()) {
-        return;
-    }
-
-    m_OperatorList.erase(m_OperatorList.begin() + position);
+    return m_OperatorList[position];
 }
 
 
-void BasicOperators::remove(const char character) {
-    size_t pos = std::string::npos, length = m_OperatorList.size();
-
-    for (size_t idx = 0; idx < length; idx++) {
-        if (m_OperatorList[idx].operatorSymbol == character) {
-            pos = idx;
-        }
-    }
-
-    if (pos != std::string::npos) {
-        m_OperatorList.erase(m_OperatorList.begin() + pos);
-        return;
-    }
-}
-
-std::optional<real_t> BasicOperators::runfunc(const char _operator, real_t val1, real_t val2) {
+/* TODO: We should remove this, way too slow */
+std::optional<real_t> BasicOperators::runfunc(const std::string& Operator, real_t val1, real_t val2) {
     size_t len = m_OperatorList.size();
 
-    for (size_t i = 0; i < len; i++) {
-        if (_operator == m_OperatorList[i].operatorSymbol) {
+    for (size_t i = 0; i < len; ++i) {
+        if (m_OperatorList[i].isvalidOperatorSymbol(Operator)) {
             return std::make_optional(m_OperatorList[i].eval(val1, val2));
         }
     }
 
     return std::nullopt;
 }
+
+/* NOTE: what is this */
+singleOperator BasicOperators::get(const std::string& Operator) const {
+    size_t pos = ERRCODE, length = m_OperatorList.size();
+
+    for (size_t idx = 0; idx < length; idx++) {
+        if (m_OperatorList[idx].isvalidOperatorSymbol(Operator)) {
+            pos = idx;
+            break;
+        }
+    }
+
+    /* NOTE: Does not matter and NIL is just so we dont get the warning by the singleOperators constructor for empty argument pack */
+    if (pos == ERRCODE) return {nullptr, OperatorPrecedence::None, "NIL"};
+    return get(pos);
+}
+
+size_t BasicOperators::size(void) const {
+    return m_OperatorList.size();
+}
+
+/* NOTE: `Remove` functions */
+// void BasicOperators::overwrite(const std::vector<singleOperator>& newOperatorList) {
+//     size_t size = newOperatorList.size();
+//
+//     m_OperatorList.clear();
+//     m_OperatorList.reserve(size);
+//
+//     for (size_t idx = 0; idx < size; ++idx) {
+//         m_OperatorList.emplace_back(newOperatorList[idx]);
+//     }
+// }
+
+// void BasicOperators::removeAt(const size_t position) {
+//     if (position > m_OperatorList.size()) {
+//         return;
+//     }
+//
+//     m_OperatorList.erase(m_OperatorList.begin() + position);
+// }
+
+
+// void BasicOperators::remove(const std::string_view osymbol) {
+//     size_t pos = ERRCODE, length = m_OperatorList.size();
+//
+//     for (size_t idx = 0; idx < length; ++idx) {
+//         if (m_OperatorList[idx].isvalidOperatorSymbol(osymbol)) {
+//             pos = idx;
+//         }
+//     }
+//
+//     if (pos != ERRCODE) {
+//         m_OperatorList.erase(m_OperatorList.begin() + pos);
+//         return;
+//     }
+// }

@@ -1,37 +1,42 @@
-#include <cstdio>
-#include <string_view>
-
 #include "lexer.h"
 
-Lexer::Lexer(const std::string_view expression) : m_expression(expression.data()), currentTokenPosition(0) {
+/*  TODO: Try to change most of std::string to either string_view or char* 
+ *  To reduce allocation ==> Optimization :) */
+
+BasicOperators Operators = {
+    { [](real_t a, real_t b) { return a+b; }, OperatorPrecedence::Low,  "+", "add" },
+    { [](real_t a, real_t b) { return a-b; }, OperatorPrecedence::Low,  "-", "sub" },
+    { [](real_t a, real_t b) { return a*b; }, OperatorPrecedence::High, "*", "mul" },
+    { [](real_t a, real_t b) { return a/b; }, OperatorPrecedence::High, "/", "div" },
+};
+
+Lexer::Lexer(const std::string& expression) :
+    m_expression(expression),
+    m_index(-1),
+    m_operatorsLength(Operators.size()) /* NOTE: operatorsLength is only used at one place */
+{
     if (m_expression.empty()) {
-        fprintf(stderr, "Empty Expression\n");
-        exit(1);
+        std::cerr << "Empty expression\n";
+        exit(EXIT_FAILURE);
     }
 }
 
-real_t divide(real_t a, real_t b) {
-    if (b != 0)
-        return a/b;
-
-    fprintf(stderr, "Math Error: Division by zero\n");
-    exit(1);
+/*  NOTE: Check out to learn more about ascii stuff: https://www.ascii-code.com/ */
+static bool isvalidSpecialCharacter(const char ch) {
+    return ( (ch >= '!' && ch <= '&' ) || (ch >= '*' && ch <= '-') || ch == '@' || ch == '^' || ch == '~' || ch == '/' );
 }
 
-BasicOperators Operators = {
-    { '+', OperatorPrecedence::LOW , [](real_t a, real_t b) -> real_t { return a+b; } },
-    { '-', OperatorPrecedence::LOW , [](real_t a, real_t b) -> real_t { return a-b; } },
-    { '*', OperatorPrecedence::HIGH, [](real_t a, real_t b) -> real_t { return a*b; } },
-    { '/', OperatorPrecedence::HIGH, divide},
-};
+static bool isletter(const char ch) {
+    return (ch >= 65 && ch <= 95 ) || (ch >= 97 && ch <= 122);
+}
 
-bool Lexer::isaspace(const char ch) {
+static bool isaspace(const char ch) {
     return (ch == ' ' || ch == '\t' ||
     ch == '\n'|| ch == '\r' ||
     ch == '\v');
 }
 
-bool Lexer::isadigit(const char ch) {
+static bool isadigit(const char ch) {
     return (ch == '1' || ch == '2' ||
     ch == '3' || ch == '4' ||
     ch == '5' || ch == '6' ||
@@ -39,50 +44,76 @@ bool Lexer::isadigit(const char ch) {
     ch == '9' || ch == '0' );
 }
 
+/* Just collects and returns a string */
+std::string Lexer::collectSymbol(void) {
+    std::string symbol;
+    bool quit = false;
+    char next = m_expression[m_index];
+
+    do
+    {
+        symbol += next;
+        next = m_expression[m_index+1];
+        isletter(next) || isvalidSpecialCharacter(next) ? ++m_index : quit = true;
+
+    }  while (m_index < m_expression.length() && !quit);
+
+    return symbol;
+}
+
 Token Lexer::getnextToken(void) {
+    ++m_index;
+
     const size_t exprlen = m_expression.length();
-    if (currentTokenPosition >= exprlen) {
+    if (m_index >= exprlen) {
         return {"", TokenType::END};
     }
 
     /* Skip Spaces */
-    while (isaspace(m_expression[currentTokenPosition])) {
-        ++currentTokenPosition;
-    }
+    while (isaspace(m_expression[m_index])) ++m_index;
 
     /* Storing the number */
-    if (isadigit(m_expression[currentTokenPosition]) || m_expression[currentTokenPosition] == '.') {
-        std::string number = "";
-        char currentReadingToken = m_expression[currentTokenPosition];
+    if (isadigit(m_expression[m_index]) || m_expression[m_index] == '.') {
+        std::string number;
 
-        while ( ( isadigit(currentReadingToken) || currentReadingToken == '.') && (currentTokenPosition < exprlen) ) {
-            number += currentReadingToken;
-            currentReadingToken = m_expression[++currentTokenPosition];
-        }
+        while (m_index < exprlen)
+        {
+            number += m_expression[m_index];
+            char next = m_expression[m_index+1];
 
-        return {number, TokenType::NUMBER};
-    }
+            if (isadigit(next) || next == '.') {
+                ++m_index;
+                continue;
+            }
 
-    else if (m_expression[currentTokenPosition] == '(') {
-        ++currentTokenPosition;
-        return { "(", TokenType::LPAREN };
-    }
-
-    else if (m_expression[currentTokenPosition] == ')' ) {
-        ++currentTokenPosition;
-        return { ")", TokenType::RPAREN };
-    }
-
-    for (size_t i = 0; i < Operators.size(); i++) {
-        if (m_expression[currentTokenPosition] == Operators.get(i).operatorSymbol) {
-            return { std::string(1, m_expression[currentTokenPosition++]), TokenType::OPERATOR }; // Return then increment
+            return {number, TokenType::NUMBER};
         }
     }
 
-    fprintf(stderr, "Found Unexpected token at %zu '%c'\n", currentTokenPosition, m_expression[currentTokenPosition]);
-    exit(1);
+    else if (m_expression[m_index] == '(' || m_expression[m_index] == ')')
+        return { std::string(1, m_expression[m_index]), m_expression[m_index] == '(' ? TokenType::LPAREN : TokenType::RPAREN };
+
+    else if (isletter(m_expression[m_index]) || isvalidSpecialCharacter(m_expression[m_index])) {
+        std::string symbol = collectSymbol();
+
+        /* ------------------------------------------------------------------------ */
+        /* TODO: check for variables, functions constant etc  */
+        /* TODO: For Optimization ==> something with static hash_table */
+        /* NOTE: Looping over OperatorsList checking if Readingstring is an operator */
+        /* ------------------------------------------------------------------------- */
+
+        for (size_t i = 0; i < m_operatorsLength; ++i) {
+            singleOperator x = Operators.get(i);
+            if (x.isvalidOperatorSymbol(symbol)) {
+                return { symbol, TokenType::OPERATOR };
+            }
+        }
+    }
+
+    std::cerr << "ERROR: Invalid token at " << m_index << " `" << m_expression[m_index] << "`\n";
+    exit(EXIT_FAILURE);
 }
 
 size_t Lexer::getindex(void) const {
-    return currentTokenPosition;
+    return m_index;
 }

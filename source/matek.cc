@@ -1,9 +1,8 @@
 #include "matek.h"
 #include "checks.h"
+#include "parser.h"
 
-#include <string_view>
-
-void Matek::expression(const std::string_view expr) {
+void Matek::expression(const std::string& expr) {
     m_expression = expr;
 
     if (m_docheck) {
@@ -12,12 +11,12 @@ void Matek::expression(const std::string_view expr) {
         bool retval2 = check.checkParenSyntax();
 
         if (!retval1) {
-            fprintf(stderr, "error: please close your parenthesis\n");
+            std::cerr << COLOR_RED << "ERROR: Unequal number of opening and closing parenthesis" << RESET_TERM_COLOR << '\n';
             exit(EXIT_FAILURE);
         }
 
         if (!retval2) {
-            fprintf(stderr, "error: invalid parenthesis syntax\n");
+            std::cerr << COLOR_RED << "ERROR: Invalid parenthesis's"  << RESET_TERM_COLOR << '\n';
             exit(EXIT_FAILURE);
         }
     }
@@ -35,14 +34,14 @@ real_t Matek::privateEval(const std::unique_ptr<BaseAst>& node) {
         std::optional<real_t> retval = Operators.runfunc(binaryNode->Operator, left, right);
 
         if (!retval) {
-            fprintf(stderr, "%serror: invalid operator '%c' %s\n", COLOR_RED, binaryNode->Operator, RESET_TERM_COLOR);
+            std::cerr << COLOR_RED << "ERROR: Invalid operator `" << binaryNode->Operator << '`' << RESET_TERM_COLOR << '\n';
             exit(EXIT_FAILURE);
         }
 
         return retval.value();
     }
 
-    fprintf(stderr, "%serror: invalid ast%s\n", COLOR_RED, RESET_TERM_COLOR);
+    std::cerr << COLOR_RED << "ERROR: Invalid ast" << RESET_TERM_COLOR << '\n';
     exit(EXIT_FAILURE);
 }
 

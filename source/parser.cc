@@ -1,15 +1,22 @@
 #include "parser.h"
-#include "token.h"
+#include "operators.h"
 
 // These all are just to show what stdlibs are being used, this will work 
 // even if we remove them (as they are already included in ^ header files)
 
+// TOOD: make m_currentOperatorPrecedence
+
 #include <cstdio>
 #include <iostream>
 #include <memory>
-#include <string_view>
 
-Parser::Parser(const std::string_view expression) : m_expression(expression), lexer(expression) {}
+/* NOTE: Here we are not checking if `Operator` is a valid operator or not because that is already checked by the lexer */
+static OperatorPrecedence getPrecedence(const std::string& Operator) {
+    singleOperator sopr = Operators.get(Operator);
+    return sopr.getPrecedence();
+}
+
+Parser::Parser(const std::string& expression) : m_expression(expression), lexer(expression) {}
 
 void Parser::getNewCurrentToken(void) {
     Token t = lexer.getnextToken();
@@ -17,7 +24,7 @@ void Parser::getNewCurrentToken(void) {
     m_currentTokenType = t.tokenType;
     m_currentTokenSymbol = t.tokenSymbol;
 
-    m_currentOperator = m_currentTokenType == TokenType::OPERATOR ? m_currentTokenSymbol[0] : 0;
+    m_currentOperator = m_currentTokenType == TokenType::OPERATOR ? m_currentTokenSymbol : "";
     m_currentTokenPosition = lexer.getindex();
 }
 
@@ -29,17 +36,22 @@ std::unique_ptr<BaseAst> Parser::parse_Paren() {
 std::unique_ptr<BaseAst> Parser::parse_Number(void) {
     getNewCurrentToken();
 
-    /* this is for expression's like: -2, +3.14
+    /* NOTE: this is for expression's like: -2, +3.14
          * we will just evaluate such input as: 0 - 2 */
 
+    /* 
     if (m_currentTokenType == TokenType::OPERATOR &&
-        (m_currentOperator == '+' || m_currentOperator == '-') && m_currentTokenPosition != m_expression.size())
-    {
+       (m_currentOperator == '+' || m_currentOperator == '-') && m_currentTokenPosition != m_expression.size()) {
+    */
+
+    if (m_currentTokenType == TokenType::OPERATOR &&  getPrecedence(m_currentOperator) == OperatorPrecedence::Low &&
+        m_currentTokenPosition != m_expression.size()) {
 
         std::unique_ptr<BaseAst> lNumber = std::make_unique<NumberNode>(0);
-        char Operator = m_currentOperator;
+        const std::string Operator = m_currentOperator;
         std::unique_ptr<BaseAst> rNumber = parse_Number();
 
+        /*  TODO: BINARYNODE [ NEED TO CONVERT OPERATOR NAME TO SYMBOL ] */
         return std::make_unique<BinaryNode>(Operator, std::move(lNumber), std::move(rNumber));
     }
 
@@ -95,16 +107,18 @@ std::unique_ptr<BaseAst> Parser::get_highPrecedenceNodes(std::unique_ptr<BaseAst
     std::unique_ptr<BaseAst> ln = !node ? parse_Number() : std::move(node);
     std::unique_ptr<BaseAst> rn = nullptr;
 
-    char Operator = m_currentOperator;
-    bool unusual_token = Operator == '+' || Operator == '-' || m_currentTokenType == TokenType::END || m_currentTokenType == TokenType::RPAREN;
+    std::string Operator = m_currentOperator;
+    bool unusual_token = getPrecedence(Operator) == OperatorPrecedence::Low || m_currentTokenType == TokenType::END || m_currentTokenType == TokenType::RPAREN;
 
     if (unusual_token) {
         return ln;
     }
 
-    // for like 2(3) = 2*(3)
+    /* for like 2(3) = 2*(3) */
+    /* Only do this if '*' [Multiplication] Operator Exists */
+
     else if (m_currentTokenType == TokenType::LPAREN) {
-        Operator = '*';
+        Operator = "*";
     }
 
     rn = m_currentTokenType == TokenType::LPAREN ? parse_Paren() : parse_Number();
@@ -117,13 +131,13 @@ std::unique_ptr<BaseAst> Parser::parse_highPrecedence() {
     std::unique_ptr<BaseAst> hpnode = nullptr;
 
     /* This whole loop is for things like 2*3*4*... = ((2*3)*4)... */
-    do {
+
+    do
+    { 
         hpnode = get_highPrecedenceNodes(std::move(hpnode));
-    } while (
-    m_currentOperator     != '+'
-    && m_currentOperator  != '-'
-    && m_currentTokenType != TokenType::END
-    && m_currentTokenType != TokenType::RPAREN );
+    }
+    while (getPrecedence(m_currentOperator) != OperatorPrecedence::Low &&
+    m_currentTokenType != TokenType::END && m_currentTokenType != TokenType::RPAREN);
 
     return hpnode;
 }
@@ -137,7 +151,7 @@ std::unique_ptr<BaseAst> Parser::get_lowPrecedenceNodes(std::unique_ptr<BaseAst>
         return leftnode;
 
     /* no checks on Operator?? in check.h right? */
-    char Operator = m_currentOperator;
+    const std::string Operator = m_currentOperator;
     std::unique_ptr<BaseAst> rightnode = parse_highPrecedence();
 
     std::unique_ptr<BaseAst> subnode = std::make_unique<BinaryNode>(Operator, std::move(leftnode), std::move(rightnode));

@@ -4,6 +4,7 @@
 
 #include "node.h"
 #include "lexer.h"
+#include "operators.h"
 
 // declared/defined in @lexer.cc
 extern BasicOperators Operators;
@@ -14,17 +15,20 @@ extern BasicOperators Operators;
 class Parser {
 public:
     Parser(const Parser &) = delete;
-    Parser(const std::string_view expression);
+    Parser(const std::string& expression);
 
     std::unique_ptr<BaseAst> parse();
 
 private:
-    const std::string_view m_expression;
+    const std::string m_expression;
     Lexer lexer;
 
-    std::string_view m_currentTokenSymbol;
+    /*  TODO: Organize these all into a struct or something */
+
+    std::string m_currentTokenSymbol;
+    OperatorPrecedence m_currentOperatorPrecedence;
     TokenType m_currentTokenType;
-    char m_currentOperator;
+    std::string m_currentOperator;
     size_t m_currentTokenPosition;
 
 private:

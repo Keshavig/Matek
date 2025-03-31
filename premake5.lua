@@ -2,11 +2,11 @@ workspace "main"
     configurations { "Debug", "Release" }
 
 project "matekx"
-    kind "SharedLib"
+    kind "StaticLib"
     language "C++"
     targetdir "lib/%{cfg.buildcfg}"
 
-    files { "source/**.cc", "source/**.h" }
+    files { "source/**.cpp", "source/**.h" }
     
     filter "configurations:DEBUG"
         defines { "DEBUG" }
@@ -21,7 +21,7 @@ project "exprx"
     language "C++"
     targetdir "bin/%{cfg.buildcfg}"
 
-    files { "tests/*.cc" }
+    files { "tests/*.cpp" }
 
     links { "matekx" }
 
