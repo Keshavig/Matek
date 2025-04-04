@@ -21,9 +21,9 @@ project "exprx"
     language "C++"
     targetdir "bin/%{cfg.buildcfg}"
 
-    files { "tests/*.cpp" }
-
+    files { "examples/exprx.cpp" }
     links { "matekx" }
+    buildoptions { "--static" }
 
     filter "configurations:DEBUG"
         defines { "DEBUG" }
@@ -33,3 +33,16 @@ project "exprx"
         defines { "NDEBUG" }
         optimize "On"
 
+
+project "arger"
+    kind "ConsoleApp"
+    language "C++"
+    targetdir "bin/%{cfg.buildcfg}"
+
+    files { "examples/arger.cpp" }
+    links { "matekx" }
+    buildoptions { "--static" }
+
+    filter "configurations:Release"
+        defines { "NDEBUG" }
+        optimize "On"
