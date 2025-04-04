@@ -6,20 +6,19 @@
 enum class TokenType {
     OPERATOR = 0,
     NUMBER,
-    VARIABLE,
-    FUNCTION,
     LPAREN,
     RPAREN,
-    NEWSYMBOL,
     END,
-    INVALID,
+    VARIABLE,
+    FUNCTION,
 };
 
 struct Token {
-    std::string tokenSymbol;
+    const char* tokenSymbol;
     TokenType tokenType;
 
     Token() = delete;
     Token(const Token& tkn) = default;
-    Token(const std::string& ts, const TokenType tt) : tokenSymbol(ts), tokenType(tt) {}
+
+    Token(const char* ts, const TokenType tt) : tokenSymbol(ts), tokenType(tt) {}
 };

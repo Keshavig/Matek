@@ -1,68 +1,83 @@
 #include "matek.h"
 #include "checks.h"
+#include "node.h"
 #include "operators.h"
 #include "parser.h"
 
-void Matek::expression(const std::string& expr) {
-    m_expression = expr;
+bool Monster::setExpression(const std::string_view expr) {
+    if (expr.empty()) {
+        std::cerr << "Empty expression\n";
+        return false;
+    }
 
-    if (m_docheck)
-    {
+    /* TODO: Dont make `Checks` a class, just functions */
+    if (m_docheck) {
         Checks check(expr);
         bool retval1 = check.checkParenCount();
         bool retval2 = check.checkParenSyntax();
 
         if (!retval1) {
-            std::cerr << COLOR_RED << "ERROR: Unequal number of opening and closing parenthesis" << RESET_TERM_COLOR << '\n';
+            std::cerr << "ERROR: Unequal number of opening and closing parenthesis\n" ;
             exit(EXIT_FAILURE);
         }
 
         if (!retval2) {
-            std::cerr << COLOR_RED << "ERROR: Invalid parenthesis's"  << RESET_TERM_COLOR << '\n';
+            std::cerr << "ERROR: Invalid parenthesis syntax\n";
             exit(EXIT_FAILURE);
         }
     }
+
+    m_expression = expr;
+    return true;
 }
 
-real_t Matek::eval(const std::unique_ptr<BaseAst>& node) {
-    if (auto numberNode = dynamic_cast<NumberNode*>(node.get())) {
+real_t Monster::eval(const std::unique_ptr<Matek::BaseAst>& node) {
+    if (auto numberNode = dynamic_cast<Matek::NumberNode*>(node.get())) {
         return numberNode->value;
     }
 
-    else if (auto binaryNode = dynamic_cast<BinaryNode*>(node.get())) {
-        real_t left  = Matek::eval(std::move(binaryNode->leftNode));
-        real_t right = Matek::eval(std::move(binaryNode->rightNode));
+    else if (auto binaryNode = dynamic_cast<Matek::BinaryNode*>(node.get())) {
+        real_t left  = Monster::eval(std::move(binaryNode->leftNode));
+        real_t right = Monster::eval(std::move(binaryNode->rightNode));
 
-        size_t len = m_Operators.length();
+        size_t len = m_operators.length();
+
+        /* TODO: We should not need to run this loop since we already run this same one in @lexer.cpp 
+         * We should just store the loops result somewhere */
         for (size_t i = 0; i < len; ++i) {
-            singleOperator currentOperator = m_Operators.get(i);
-            if (currentOperator.isvalidSymbol(binaryNode->Operator)) return currentOperator.m_function(left, right);
+            const Matek::singleOperator so = m_operators.get(i);
+            if (so.isvalidSymbol(binaryNode->Operator)) {
+                return so.m_function(left, right);
+            }
+
+            /* NOTE: Here we dont need to print a error for saying `invalid operator` as that will already be checked by the lexer */
         }
     }
 
-    std::cerr << COLOR_RED << "ERROR: Invalid ast" << RESET_TERM_COLOR << '\n';
-    exit(EXIT_FAILURE);
+    std::cerr << "ERROR: Invalid ast" << '\n';
+    return EXIT_FAILURE;
 }
 
-void Matek::printast(void) const {
+void Monster::printast(void) const {
     if (!m_ast) return;
 
     m_ast->print(m_Precision);
     std::cout << '\n';
 }
 
-real_t Matek::evaluate() {
-    Parser parser(m_Operators, m_expression);
-    m_ast = parser.parse();
+real_t Monster::evaluate(const std::string_view expression) {
+    /* TODO: Send anything other than 0 I think */
+    if (!setExpression(expression)) return 0;
+    ourParser.updateExpression(m_expression.data());
+    m_ast = ourParser.parse();
 
     return eval(m_ast);
 }
 
-void Matek::disableChecks(void) {
+void Monster::disableChecks(void) {
     m_docheck = false;
 }
-
-bool Matek::setprecision(size_t precision = DEFAULT_PRECISION) {
+bool Monster::setprecision(size_t precision = DEFAULT_PRECISION) {
     // remove magic number
     if (precision > 32) {
         return false;
@@ -71,3 +86,4 @@ bool Matek::setprecision(size_t precision = DEFAULT_PRECISION) {
     m_Precision = precision;
     return true;
 }
+

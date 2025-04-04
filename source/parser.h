@@ -1,45 +1,45 @@
 #pragma once
 
-/* This file parses the tokens into an ast */
-
 #include "node.h"
 #include "lexer.h"
 #include "operators.h"
 
-#define COLOR_RED "\033[38;2;255;108;107m" // Color #ff6c6b
-#define RESET_TERM_COLOR "\033[0m"
+namespace Matek {
+    class Parser {
+        public:
+            Parser(const Parser& anything) = delete;
+            Parser() = delete;
 
-class Parser {
-public:
-    Parser(const Parser &) = delete;
-    Parser(const BinaryOperators& Operators, const std::string& expression);
+            Parser(const BinaryOperators& Operators, const std::string_view expression);
+            std::unique_ptr<BaseAst> parse();
+            void updateExpression(const char* expre);
 
-    std::unique_ptr<BaseAst> parse();
+        private:
+            std::string_view m_expression;
+            Lexer ourlexer;
 
-private:
-    const std::string m_expression;
-    Lexer lexer;
+            /*  TODO: Organize these all into a struct or something */
 
-    /*  TODO: Organize these all into a struct or something */
+            const BinaryOperators& m_Operators;
 
-    const BinaryOperators& m_Operators;
+            /* NOTE: This should also store the operator's function idk */
+            struct Data {
+                char* operatorSymbol;
+                char* tokenSymbol;
+                Precedence operatorPrecedence;
+                TokenType tokenType;
+                size_t tokenPosition;
+            } m_current;
 
-    std::string m_currentTokenSymbol;
-    std::string m_currentOperator;
+        private:
+            void updateCurrentToken(void);
 
-    OperatorPrecedence m_currentOperatorPrecedence;
-    TokenType m_currentTokenType;
-    size_t m_currentTokenPosition;
+            std::unique_ptr<BaseAst> parselowPrecedence();
+            std::unique_ptr<BaseAst> getlowPrecedenceNodes(std::unique_ptr<BaseAst> node);
 
-private:
-    void getNewCurrentToken(void);
+            std::unique_ptr<BaseAst> gethighPrecedenceNodes(std::unique_ptr<BaseAst> node);
+            std::unique_ptr<BaseAst> parsehighPrecedence();
 
-    std::unique_ptr<BaseAst> parse_lowPrecedence();
-    std::unique_ptr<BaseAst> get_lowPrecedenceNodes(std::unique_ptr<BaseAst> node);
-
-    std::unique_ptr<BaseAst> parse_highPrecedence();
-    std::unique_ptr<BaseAst> get_highPrecedenceNodes(std::unique_ptr<BaseAst> node);
-
-    std::unique_ptr<BaseAst> parse_Number();
-    std::unique_ptr<BaseAst> parse_Paren();
+            std::unique_ptr<BaseAst> parseNumber();
+    };
 };

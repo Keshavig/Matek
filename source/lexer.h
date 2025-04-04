@@ -1,23 +1,28 @@
 #pragma once
 
 #include "operators.h"
+#include <string_view>
 
-class Lexer {
-private:
-    const std::string m_expression;
-    const BinaryOperators& m_Operators;
-    const size_t m_operatorsLength;
+namespace Matek 
+{
+    class Lexer {
+    private:
+        std::string_view m_expression;
+        const BinaryOperators& m_Operators;
+        size_t m_exprlen;
+        int m_index; // This is integer just for the sake of the constructor
 
-    int m_index;
+        char* stringStorage;
 
-public:
-    Lexer() = delete;
-    Lexer(const Lexer& l) = delete;
-    Lexer(const BinaryOperators& Operators, const std::string& expression);
+    public:
+        Lexer() = delete;
+        Lexer(const Lexer& l) = delete;
+        Lexer(const BinaryOperators& Operators, const std::string_view expression);
 
-    Token getnextToken(void);
-    size_t getindex(void) const;
+        Token getnextToken(void);
+        size_t getindex(void) const;
+        void updateExpression(const char* expr);
 
-private:
-    std::string collectSymbol(void);
+        ~Lexer();
 };
+}

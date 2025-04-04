@@ -1,32 +1,40 @@
 #pragma once
 
-#include "node.h"
 #include "operators.h"
+#include "parser.h"
+#include "lexer.h"
 
 #define EXIT_FAILURE 1
 
-class Matek final {
-public:
-    Matek(const BinaryOperators& Operators) : m_Operators(Operators) {}
-    Matek(const Matek& mtk) = delete;
+/* TODO: Initialize Lexer here so we dont't have to initialize it everytime we run evaluate(...) */
 
-    void expression(const std::string& expr);
-    void disableChecks(void);
-    std::unique_ptr<BaseAst> parse();
+class Monster final {
+    public:
+        Monster (const Matek::BinaryOperators& Operators) : m_operators(Operators), ourParser(Operators, m_expression) {}
+        Monster (const Monster& mtk) = delete;
 
-    bool setprecision(size_t precision);
+        void disableChecks(void);
+        std::unique_ptr<Matek::BaseAst> parse();
 
-    void printast(void) const;
-    real_t evaluate();
+        bool setprecision(size_t precision);
 
-private:
-    const BinaryOperators& m_Operators;
+        void printast(void) const;
+        real_t evaluate(const std::string_view expression);
 
-    std::string m_expression;
-    std::unique_ptr<BaseAst> m_ast;
+        ~Monster() = default;
 
-    bool m_docheck = true;
-    size_t m_Precision = DEFAULT_PRECISION;
+    private:
+        real_t eval(const std::unique_ptr<Matek::BaseAst>& ast);
+        bool setExpression(const std::string_view expr);
 
-    real_t eval(const std::unique_ptr<BaseAst>& ast);
+    private:
+        const Matek::BinaryOperators& m_operators;
+
+        std::string_view m_expression;
+        std::unique_ptr<Matek::BaseAst> m_ast;
+
+        bool m_docheck = true;
+        size_t m_Precision = DEFAULT_PRECISION;
+
+        Matek::Parser ourParser;
 };

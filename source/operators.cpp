@@ -1,98 +1,101 @@
 #include <cstdlib>
 #include <unordered_set>
+#include <string_view>
+#include <initializer_list>
+
 #include "operators.h"
 
 constexpr size_t ERRCODE = -1;
 constexpr const char* NIL = "NIL";
 
-static std::unordered_set<std::string> definedOperators;
+static std::unordered_set<std::string_view> definedOperators;
+// definedOperators.reserve(16);
 
-/* ----------------------------- */
-/*  STRUCT SINGLEOPERATOR STUFF  */
-/* ----------------------------- */
-
-std::unordered_set<std::string> singleOperator::getSymbols(void) const {
-    return m_operatorNames;
-}
-
-/* Info: Just checks if `operatorSymbol` exists in m_operatorsSet */
-bool singleOperator::isvalidSymbol(const std::string& operatorSymbol) const {
-    if (m_operatorNames.find(operatorSymbol) == m_operatorNames.end())
-        return false;
-
-    return true;
-}
-
-/* ---------------------------- */
-/*  CLASS BASICOPERATORS STUFF  */
-/* ---------------------------- */
-
-/* INFO: This just inserts the operator symbols into the definedOperators set */
-void BinaryOperators::updateSymbols(const std::unordered_set<std::string>& symbols) {
-    for (const auto& sym : symbols)
-    {
-        auto [_, uniq] = definedOperators.insert(sym);
-        if (!uniq) {
-            std::cerr << "ERROR: You have conflicting operator names in your binaryOperators list\n";
-            exit(EXIT_FAILURE);
-        }
+namespace Matek {
+    std::unordered_set<std::string_view> singleOperator::getSymbols(void) const {
+        return m_operatorNames;
     }
-}
 
-BinaryOperators::BinaryOperators(const std::vector<singleOperator>& boperators): m_OperatorList(boperators) {
-    const size_t length = boperators.size();
+    bool singleOperator::isvalidSymbol(const std::string_view operatorSymbol) const {
+        /* function std::unordered_set::count just count's the number of occurences of operatorSymbol in the set, and since
+         * unordered_set does not allow for duplicates, this means it returns either 1 or 0
+         * depending on if operatorSymbol exists in m_operatorNames or not */
 
-    for (size_t i = 0; i < length; ++i) {
-        const std::unordered_set<std::string> symbols = boperators[i].getSymbols();
-        updateSymbols(symbols);
+        return m_operatorNames.count(operatorSymbol);
     }
-}
 
-void BinaryOperators::add(const std::vector<singleOperator>& operatorList) {
-    const size_t length = operatorList.size();
-
-    for (size_t i = 0; i < length; ++i) {
-        singleOperator current = operatorList[i];
-        m_OperatorList.emplace_back(current);
-
-        const std::unordered_set<std::string> symbols = current.getSymbols();
-        updateSymbols(symbols);
+    // TODO: Something IDK
+    BinaryOperators::BinaryOperators(std::initializer_list<singleOperator> initList) : m_OperatorList(initList) {
+        definedOperators.reserve(m_OperatorList.size() * m_OperatorList[0].getSymbols().size());
     }
-}
 
-void BinaryOperators::add(const singleOperator& singleOperator) {
-    const std::unordered_set<std::string> operatorSymbols = singleOperator.getSymbols();
-    updateSymbols(operatorSymbols);
-    m_OperatorList.push_back(singleOperator);
-}
-
-singleOperator BinaryOperators::get(const std::string& Operator) const {
-    size_t pos = ERRCODE, length = m_OperatorList.size();
-
-    for (size_t idx = 0; idx < length; idx++) {
-        if (m_OperatorList[idx].isvalidSymbol(Operator)) {
-            pos = idx;
-            break;
+    /* INFO: This just inserts the operator symbols into the definedOperators set */
+    void BinaryOperators::updateSymbols(const symbolsList& symbols) {
+        for (const auto& sym : symbols)
+        {
+            auto [_, uniq] = definedOperators.insert(sym);
+            if (!uniq) {
+                std::cerr << "ERROR: You have conflicting operator names in your binaryOperators list\n";
+                exit(EXIT_FAILURE);
+            }
         }
     }
 
-    /* NOTE: We return NIL just so we dont get the warning by the singleOperators constructor for having an empty argument pack */
-    if (pos == ERRCODE) return {nullptr, OperatorPrecedence::None, NIL};
-    return get(pos);
-}
+    BinaryOperators::BinaryOperators(const std::vector<singleOperator>& boperators): m_OperatorList(boperators) {
+        const size_t length = boperators.size();
 
-singleOperator BinaryOperators::get(const size_t position) const {
-    if (position > m_OperatorList.size())
-        return {nullptr, OperatorPrecedence::None, NIL};
+        for (size_t i = 0; i < length; ++i) {
+            const std::unordered_set<std::string_view> symbols = boperators[i].getSymbols();
+            updateSymbols(symbols);
+        }
+    }
 
-    return m_OperatorList[position];
-}
+    void BinaryOperators::add(const std::vector<singleOperator>& operatorList) {
+        const size_t length = operatorList.size();
 
-OperatorPrecedence BinaryOperators::getPrecedence(const std::string& Operator) const {
-    singleOperator sopr = get(Operator);
-    return sopr.m_precedence;
-}
+        for (size_t i = 0; i < length; ++i) {
+            singleOperator current = operatorList[i];
+            m_OperatorList.emplace_back(current);
 
-size_t BinaryOperators::length(void) const {
-    return m_OperatorList.size();
-}
+            const symbolsList& symbols = current.getSymbols();
+            updateSymbols(symbols);
+        }
+    }
+
+    void BinaryOperators::add(const singleOperator& singleOperator) {
+        const symbolsList& operatorSymbols = singleOperator.getSymbols();
+        updateSymbols(operatorSymbols);
+        m_OperatorList.push_back(singleOperator);
+    }
+
+    singleOperator BinaryOperators::get(const char* Operator) const {
+        size_t pos = ERRCODE, length = m_OperatorList.size();
+
+        for (size_t idx = 0; idx < length; idx++) {
+            if (m_OperatorList[idx].isvalidSymbol(Operator)) {
+                pos = idx;
+                break;
+            }
+        }
+
+        /* NOTE: We return NIL just so we dont get the warning by the singleOperators constructor for having an empty argument pack */
+        if (pos == ERRCODE) return {nullptr, Precedence::Invalid, NIL};
+        return get(pos);
+    }
+
+    singleOperator BinaryOperators::get(const size_t position) const {
+        if (position > m_OperatorList.size())
+            return {nullptr, Precedence::Invalid, NIL};
+
+        return m_OperatorList[position];
+    }
+
+    Precedence BinaryOperators::getPrecedence(const char* Operator) const {
+        singleOperator sopr = get(Operator);
+        return sopr.m_precedence;
+    }
+
+    size_t BinaryOperators::length(void) const {
+        return m_OperatorList.size();
+    }
+};
