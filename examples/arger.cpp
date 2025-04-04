@@ -18,6 +18,6 @@ int main(int argc, char* argv[]) {
     const char* expression = argv[1];
     const real_t result = math.evaluate(expression);
 
-    std::cout << std::fixed << std::setprecision(2) << result << std::endl;
+    std::cout << std::fixed << std::setprecision(1) << result << std::endl;
     return 0;
 }
