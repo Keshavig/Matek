@@ -1,13 +1,11 @@
 #include "lexer.h"
 #include "operators.h"
+#include "error.h"
 
 constexpr int DefaultIndexValue = -1;
 
 /* TODO: Let the User Handle Errors */
 /* Somethinig like SDL_GetError() would be nice with return values */
-
-// Defined at @parser.cpp
-extern void printer(const char* expression, const size_t position, const char* message, const bool color = true, const char ch = '^');
 
 // NOTE: Can we something to reduce the allocation for stringStorage incase of really long expression?
 // TODO: yes we can, We need to make a limit of 256 I think
@@ -90,7 +88,8 @@ namespace Matek
             return {stringStorage, m_expression[m_index] == '(' ? TokenType::LPAREN : TokenType::RPAREN };
         }
 
-        else if (isletter(m_expression[m_index]) || isvalidSpecialCharacter(m_expression[m_index])) {
+        const size_t ogPosition = m_index; // Needed for error printing
+        if (isletter(m_expression[m_index]) || isvalidSpecialCharacter(m_expression[m_index])) {
             stringStorage[0] = m_expression[m_index];
             while (isletter(m_expression[m_index+1]) || isvalidSpecialCharacter(m_expression[m_index+1])) {
                 stringStorage[++i] = m_expression[++m_index];
@@ -103,7 +102,7 @@ namespace Matek
             }
         }
 
-        printer(m_expression.data(), m_index-i, "Unexpected token was found");
+        Error::printer(m_expression.data(), "Invalid operator was found",  ogPosition, i+1);
         exit(EXIT_FAILURE);
     }
 

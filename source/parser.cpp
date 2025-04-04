@@ -6,34 +6,9 @@
 #include "parser.h"
 #include "operators.h"
 #include "token.h"
+#include "error.h"
 
 constexpr const char* NULL_STRING = "";
-
-constexpr const char* COLOR_RED    = "\033[31m";
-constexpr const char* COLOR_BLUE   = "\033[34m";
-constexpr const char* COLOR_PINK   = "\033[35m";
-constexpr const char* COLOR_GREEN  = "\033[32m";
-constexpr const char* COLOR_YELLOW = "\033[33m";
-
-constexpr const char* RESET_TERM_COLOR = "\033[0m";
-
-/* TODO: Replace that 1: with current line of input reading */
-
-/* A function that prints error messages, PrintError */
-void printer(const char* expression, const size_t position, const char* message, bool color = true, const char ch = '^') {
-    if (!color) {
-        fprintf(stderr, "1:%zu: error: %s\n", position, message);
-        fprintf(stderr, "%s\n", expression);
-        fprintf(stderr, "%*c\n", static_cast<int>(position+1), ch);
-        return;
-    }
-
-    fprintf(stderr, "%s1:%zu%s: %serror:%s %s\n", COLOR_GREEN, position,
-            RESET_TERM_COLOR, COLOR_RED, RESET_TERM_COLOR, message);
-
-    fprintf(stderr, "%s%s%s\n", COLOR_BLUE, expression, RESET_TERM_COLOR);
-    fprintf(stderr, "%s%*c%s\n", COLOR_RED, static_cast<int>(position), ch, RESET_TERM_COLOR);
-}
 
 namespace Matek {
     Parser::Parser(const BinaryOperators& Operators, const std::string_view expression) :
@@ -48,33 +23,46 @@ namespace Matek {
         m_current.operatorPrecedence = m_current.operatorSymbol == NULL_STRING ? Precedence::Invalid : m_Operators.getPrecedence(m_current.operatorSymbol);
         m_current.tokenPosition = ourlexer.getindex();
     }
+    
+    std::unique_ptr<BaseAst> Parser::handleNumber(void) {
+        std::unique_ptr<BaseAst> numberNode;
+        try {  
+            numberNode = std::make_unique<NumberNode>(std::stold(m_current.tokenSymbol));
+        }
+
+        catch (std::invalid_argument& e) {
+            Error::printer(m_current.tokenSymbol, "Invalid number", m_current.tokenPosition);
+            exit(EXIT_FAILURE);
+        }
+
+        catch (std::out_of_range& e) {
+            Error::printer(m_current.tokenSymbol, "Number out of bounds", m_current.tokenPosition);
+            exit(EXIT_FAILURE);
+        }
+
+        updateCurrentToken();
+        return numberNode;
+    }
 
     std::unique_ptr<BaseAst> Parser::parseNumber(void) {
         updateCurrentToken();
+        if (!m_current.tokenSymbol || m_current.tokenType == TokenType::END) {
+            Error::printer(m_expression.data(), "Sudden end of expression, more input was required", m_current.tokenPosition);
+            exit(EXIT_FAILURE);
+        }
 
-        if (m_current.tokenType == TokenType::NUMBER)
-        {
-            std::unique_ptr<BaseAst> numberNode;
-            try {  
-                numberNode = std::make_unique<NumberNode>(std::stold(m_current.tokenSymbol));
-            }
+        switch(m_current.tokenType) {
+            case TokenType::NUMBER:
+                return handleNumber();
 
-            catch (std::invalid_argument& e) {
-                printer(m_current.tokenSymbol, m_current.tokenPosition, "Invalid number");
-                exit(EXIT_FAILURE);
-            }
+            case TokenType::LPAREN:
+                return parselowPrecedence();
 
-            catch (std::out_of_range& e) {
-                printer(m_current.tokenSymbol, m_current.tokenPosition, "Number out of bounds");
-                exit(EXIT_FAILURE);
-            }
-
-            updateCurrentToken();
-            return numberNode;
+            default: break;
         }
 
         /* NOTE: for expression like +2, -3.141529 => (0+2), (0-3.141529) */
-        else if (m_current.tokenType == TokenType::OPERATOR &&  m_current.operatorPrecedence == Precedence::Low &&
+        if (m_current.tokenType == TokenType::OPERATOR &&  m_current.operatorPrecedence == Precedence::Low &&
                 m_current.tokenPosition != m_expression.size()) {
 
             std::unique_ptr<BaseAst> lNumber = std::make_unique<NumberNode>(0);
@@ -84,17 +72,8 @@ namespace Matek {
             return std::make_unique<BinaryNode>(Operator, std::move(lNumber), std::move(rNumber));
         }
 
-        else if (m_current.tokenType == TokenType::LPAREN) {
-            return parselowPrecedence();
-        }
 
-        /* FIXME: this feels unnecessary */
-        else if (m_current.tokenType == TokenType::END) {
-            // We should return back to the user's code here
-            static_assert(true);
-        }
-
-        printer(m_expression.data(), m_current.tokenPosition, "Unexpected character was found");
+        Error::printer(m_expression.data(), "Unexpected character was found", m_current.tokenPosition);
         exit(EXIT_FAILURE);
     }
 

@@ -33,6 +33,7 @@ namespace Matek {
 
         private:
             void updateCurrentToken(void);
+            std::unique_ptr<BaseAst> handleNumber(void);
 
             std::unique_ptr<BaseAst> parselowPrecedence();
             std::unique_ptr<BaseAst> getlowPrecedenceNodes(std::unique_ptr<BaseAst> node);
