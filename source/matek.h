@@ -6,12 +6,14 @@
 
 #define EXIT_FAILURE 1
 
-/* TODO: Initialize Lexer here so we dont't have to initialize it everytime we run evaluate(...) */
+/* TODO: Initialize Lexer here so we don't have to initialize it everytime we run evaluate(...) */
 
-class Monster final {
+class Maysin final {
     public:
-        Monster (const Matek::BinaryOperators& Operators) : m_operators(Operators), ourParser(Operators, m_expression) {}
-        Monster (const Monster& mtk) = delete;
+        Maysin (const Matek::BinaryOperators& Operators) :
+            m_operators(Operators), ourParser(Operators, m_expression, &m_currentError) {}
+
+        Maysin (const Maysin& mtk) = delete;
 
         void disableChecks(void);
         std::unique_ptr<Matek::BaseAst> parse();
@@ -19,13 +21,15 @@ class Monster final {
         bool setprecision(size_t precision);
 
         void printast(void) const;
-        real_t evaluate(const std::string_view expression);
+        Matek::Real evaluate(const std::string_view expression);
 
-        ~Monster() = default;
+        ~Maysin() = default;
 
     private:
-        real_t eval(const std::unique_ptr<Matek::BaseAst>& ast);
-        bool setExpression(const std::string_view expr);
+        Matek::Real eval(const std::unique_ptr<Matek::BaseAst>& ast);
+        Matek::Real setExpression(const std::string_view expr);
+
+        Errorkind m_currentError;
 
     private:
         const Matek::BinaryOperators& m_operators;

@@ -2,6 +2,7 @@
 
 #include "node.h"
 #include "lexer.h"
+#include "error.h"
 #include "operators.h"
 
 namespace Matek {
@@ -10,15 +11,13 @@ namespace Matek {
             Parser(const Parser& anything) = delete;
             Parser() = delete;
 
-            Parser(const BinaryOperators& Operators, const std::string_view expression);
+            Parser(const BinaryOperators& Operators, const std::string_view expression, Errorkind* error);
             std::unique_ptr<BaseAst> parse();
             void updateExpression(const char* expre);
 
         private:
             std::string_view m_expression;
             Lexer ourlexer;
-
-            /*  TODO: Organize these all into a struct or something */
 
             const BinaryOperators& m_Operators;
 
@@ -29,6 +28,7 @@ namespace Matek {
                 Precedence operatorPrecedence;
                 TokenType tokenType;
                 size_t tokenPosition;
+                Errorkind* error;
             } m_current;
 
         private:

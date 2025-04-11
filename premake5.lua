@@ -46,3 +46,14 @@ project "arger"
     filter "configurations:Release"
         defines { "NDEBUG" }
         optimize "On"
+
+newaction {
+    trigger = "run",
+    description = "Builds and runs the program",
+    execute = function()
+        local binary = "./bin/Release/exprx"
+
+        os.execute("make config=debug config=release -j4")
+        os.execute(binary)
+    end,
+}

@@ -1,19 +1,21 @@
 #include "lexer.h"
 #include "operators.h"
 #include "error.h"
+#include "token.h"
 
 constexpr int DefaultIndexValue = -1;
+constexpr size_t strlenLimit = 6969;
 
 /* TODO: Let the User Handle Errors */
 /* Somethinig like SDL_GetError() would be nice with return values */
 
-// NOTE: Can we something to reduce the allocation for stringStorage incase of really long expression?
+// NOTE: Can we something to reduce the allocation for storage incase of really long expression?
 // TODO: yes we can, We need to make a limit of 256 I think
-namespace Matek 
-{
+
+namespace Matek {
     size_t strlen(const char* str) {
         size_t len = 0;
-        while (str[len++]);
+        while (str[len++] && len < strlenLimit);
 
         return len;
     }
@@ -23,19 +25,18 @@ namespace Matek
         for (size_t i = 0; i < srclen; ++i) src[i] = 0;
     }
 
-    /* Constructor */
-    Lexer::Lexer(const BinaryOperators& Operators, const std::string_view expression) :
+    Lexer::Lexer(const BinaryOperators& Operators, const std::string_view expression, Errorkind* error) :
         m_expression(expression), m_Operators(Operators), m_index(DefaultIndexValue), m_exprlen(expression.size()),
-        stringStorage(new char[m_exprlen]) {}
+        storage(new char[m_exprlen]), m_error(error), gntcallc(0) {}
 
-    /* Destructor */
     Lexer::~Lexer() {
-        delete[] stringStorage;
+        delete[] storage;
     }
 
     /* Note: https://www.ascii-code.com/ */
     static inline bool isvalidSpecialCharacter(const char ch) {
-        return ( (ch >= '!' && ch <= '&' ) || (ch >= '*' && ch <= '-') || ch == '@' || ch == '^' || ch == '~' || ch == '/' );
+        return ch >= '!' && ch <= '&'  || ch >= '*' && ch <= '-' ||
+            ch == '@' || ch == '^' || ch == '~' || ch == '/';
     }
 
     static inline bool isletter(const char ch) {
@@ -57,7 +58,7 @@ namespace Matek
     }
 
     Token Lexer::getnextToken(void) {
-        clear(stringStorage);
+        clear(storage);
         ++m_index;
 
         if (m_index >= m_exprlen) {
@@ -71,39 +72,43 @@ namespace Matek
         /* Collecting the number */
         size_t i = 0;
         for (i = 0; m_index < m_exprlen && (isadigit(m_expression[m_index]) || m_expression[m_index] == '.'); ++i) {
-            stringStorage[i] = m_expression[m_index];
+            storage[i] = m_expression[m_index];
             char next = m_expression[m_index+1];
             if (isadigit(next) || next == '.') { 
                 ++m_index;
                 continue; 
             }
 
-            return {stringStorage, TokenType::NUMBER};
+            return {storage, TokenType::NUMBER};
         }
 
         if (m_expression[m_index] == '(' || m_expression[m_index] == ')') {
-            stringStorage[0] = m_expression[m_index];
-            stringStorage[1] = '\0';
-
-            return {stringStorage, m_expression[m_index] == '(' ? TokenType::LPAREN : TokenType::RPAREN };
+            storage[0] = m_expression[m_index];
+            return {storage, m_expression[m_index] == '(' ? TokenType::LPAREN : TokenType::RPAREN };
         }
 
-        const size_t ogPosition = m_index; // Needed for error printing
-        if (isletter(m_expression[m_index]) || isvalidSpecialCharacter(m_expression[m_index])) {
-            stringStorage[0] = m_expression[m_index];
-            while (isletter(m_expression[m_index+1]) || isvalidSpecialCharacter(m_expression[m_index+1])) {
-                stringStorage[++i] = m_expression[++m_index];
+        if (isletter(m_expression[m_index]) || isvalidSpecialCharacter(m_expression[m_index]) && m_expression[m_index] != ' ') {
+            if (gntcallc % 2 == 1) {
+                *m_error = Errorkind::ERROR_EXPECTED_NUMBER;
+                throw std::runtime_error("Catch this shit");
+                return {{}, TokenType::INVALID};
+            }
+
+            storage[0] = m_expression[m_index];
+            while (isletter(m_expression[m_index+1]) || isvalidSpecialCharacter(m_expression[m_index+1]) && m_expression[m_index] != ' ') {
+                storage[++i] = m_expression[++m_index];
             }
 
             // TODO: Add varible + Function checking 
             for (size_t j = 0; j < m_Operators.length(); ++j) {
                 singleOperator x = m_Operators.get(j);
-                if (x.isvalidSymbol(stringStorage)) return {stringStorage, TokenType::OPERATOR };
+                if (x.isvalidSymbol(storage)) return {storage, TokenType::OPERATOR };
             }
         }
 
-        Error::printer(m_expression.data(), "Invalid operator was found",  ogPosition, i+1);
-        exit(EXIT_FAILURE);
+        throw std::runtime_error("Catch this shit");
+        *m_error = Errorkind::ERROR_I_DONT_KNOW;
+        return {};
     }
 
     size_t Lexer::getindex(void) const {

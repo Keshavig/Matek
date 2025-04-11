@@ -1,89 +1,84 @@
 #include "matek.h"
 #include "checks.h"
+#include "error.h"
 #include "node.h"
 #include "operators.h"
 #include "parser.h"
+#include "real.h"
 
-bool Monster::setExpression(const std::string_view expr) {
-    if (expr.empty()) {
-        std::cerr << "Empty expression\n";
-        return false;
-    }
+using namespace Matek;
 
-    /* TODO: Dont make `Checks` a class, just functions */
-    if (m_docheck) {
-        Checks check(expr);
-        bool retval1 = check.checkParenCount();
-        bool retval2 = check.checkParenSyntax();
-
-        if (!retval1) {
-            std::cerr << "ERROR: Unequal number of opening and closing parenthesis\n" ;
-            exit(EXIT_FAILURE);
-        }
-
-        if (!retval2) {
-            std::cerr << "ERROR: Invalid parenthesis syntax\n";
-            exit(EXIT_FAILURE);
-        }
-    }
-
+Real Maysin::setExpression(const std::string_view expr) {
+    if (expr.empty()) return {ERRCODE, Errorkind::ERROR_EMPTY_EXPRESSION, {}};
     m_expression = expr;
-    return true;
+
+    if (!m_docheck) return {0, Errorkind::ERROR_NONE, {}};
+
+    Checks c(expr);
+    bool retval1 = c.checkParenCount();
+    bool retval2 = c.checkParenSyntax();
+
+    if (!retval1) return {ERRCODE, Errorkind::ERROR_UNEQUAL_PARENS, {}};
+    if (!retval2) return {ERRCODE, Errorkind::ERROR_INVALID_PAREN_SYNTAX, {}};
+
+    return {};
 }
 
-real_t Monster::eval(const std::unique_ptr<Matek::BaseAst>& node) {
+/* TOOD: Check for errors */
+Real Maysin::eval(const std::unique_ptr<Matek::BaseAst>& node) {
     if (auto numberNode = dynamic_cast<Matek::NumberNode*>(node.get())) {
-        return numberNode->value;
+        return {numberNode->value, Errorkind::ERROR_NONE, {}};
     }
 
     else if (auto binaryNode = dynamic_cast<Matek::BinaryNode*>(node.get())) {
-        real_t left  = Monster::eval(std::move(binaryNode->leftNode));
-        real_t right = Monster::eval(std::move(binaryNode->rightNode));
+        Matek::real_t leftValue  = Maysin::eval(std::move(binaryNode->leftNode)).value;
+        Matek::real_t rightValue = Maysin::eval(std::move(binaryNode->rightNode)).value;
 
         size_t len = m_operators.length();
 
         /* TODO: We should not need to run this loop since we already run this same one in @lexer.cpp 
          * We should just store the loops result somewhere */
+
         for (size_t i = 0; i < len; ++i) {
             const Matek::singleOperator so = m_operators.get(i);
             if (so.isvalidSymbol(binaryNode->Operator)) {
-                return so.m_function(left, right);
+                return { so.m_function(leftValue, rightValue), Errorkind::ERROR_NONE, {}};
             }
-
-            /* NOTE: Here we dont need to print a error for saying `invalid operator` as that will already be checked by the lexer */
         }
     }
 
-    std::cerr << "ERROR: Invalid ast" << '\n';
-    return EXIT_FAILURE;
+    return {0, Errorkind::ERROR_I_DONT_KNOW, {}};
 }
 
-void Monster::printast(void) const {
+void Maysin::printast(void) const {
     if (!m_ast) return;
 
     m_ast->print(m_Precision);
     std::cout << '\n';
 }
 
-real_t Monster::evaluate(const std::string_view expression) {
-    /* TODO: Send anything other than 0 I think */
-    if (!setExpression(expression)) return 0;
+Real Maysin::evaluate(const std::string_view expression) {
+    Real _ = setExpression(expression);
+    if (_.errorKind != Errorkind::ERROR_NONE) return _;
+
     ourParser.updateExpression(m_expression.data());
-    m_ast = ourParser.parse();
+
+    try { m_ast = ourParser.parse(); }
+    catch (const std::runtime_error& e) {
+        return {ERRCODE, m_currentError, {}};
+    }
 
     return eval(m_ast);
 }
 
-void Monster::disableChecks(void) {
+void Maysin::disableChecks(void) {
     m_docheck = false;
 }
-bool Monster::setprecision(size_t precision = DEFAULT_PRECISION) {
+
+bool Maysin::setprecision(size_t precision = DEFAULT_PRECISION) {
     // remove magic number
-    if (precision > 32) {
-        return false;
-    }
+    if (precision > 32) return false;
 
     m_Precision = precision;
     return true;
 }
-

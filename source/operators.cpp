@@ -5,11 +5,8 @@
 
 #include "operators.h"
 
-constexpr size_t ERRCODE = -1;
 constexpr const char* NIL = "NIL";
-
-static std::unordered_set<std::string_view> definedOperators;
-// definedOperators.reserve(16);
+std::unordered_set<std::string_view> definedOperators = {};
 
 namespace Matek {
     std::unordered_set<std::string_view> singleOperator::getSymbols(void) const {
@@ -24,7 +21,6 @@ namespace Matek {
         return m_operatorNames.count(operatorSymbol);
     }
 
-    // TODO: Something IDK
     BinaryOperators::BinaryOperators(std::initializer_list<singleOperator> initList) : m_OperatorList(initList) {
         definedOperators.reserve(m_OperatorList.size() * m_OperatorList[0].getSymbols().size());
     }
@@ -79,13 +75,13 @@ namespace Matek {
         }
 
         /* NOTE: We return NIL just so we dont get the warning by the singleOperators constructor for having an empty argument pack */
-        if (pos == ERRCODE) return {nullptr, Precedence::Invalid, NIL};
+        if (pos == ERRCODE) return {nullptr, Precedence::INVALID, NIL};
         return get(pos);
     }
 
     singleOperator BinaryOperators::get(const size_t position) const {
         if (position > m_OperatorList.size())
-            return {nullptr, Precedence::Invalid, NIL};
+            return {nullptr, Precedence::INVALID, NIL};
 
         return m_OperatorList[position];
     }
